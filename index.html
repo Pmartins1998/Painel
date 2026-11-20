@@ -83,6 +83,14 @@ tr:last-child td{border-bottom:0}
 .chip[aria-pressed=true]{background:var(--pri);color:var(--pri-ink);border-color:var(--pri)}
 .hb{border:1px solid var(--lin);background:var(--sup);color:var(--ink);border-radius:8px;width:34px;height:30px;cursor:pointer;font-size:14px}
 .hb[aria-pressed=true]{background:var(--pri);color:var(--pri-ink);border-color:var(--pri)}
+.medidor{height:8px;border-radius:4px;background:var(--lin);overflow:hidden;margin:4px 0 10px}.medidor i{display:block;height:100%;background:var(--s1);border-radius:4px}
+.pont{display:grid;grid-template-columns:minmax(150px,220px) 1fr;gap:18px;align-items:start}
+.pont .num{font-size:54px;font-weight:650;line-height:1;letter-spacing:-.02em}
+.tira{display:flex;gap:3px;align-items:flex-end;height:54px;margin-top:10px}
+.tira div{flex:1;min-width:0;text-align:center;font-size:10px;color:var(--mut);display:flex;flex-direction:column;justify-content:flex-end;height:100%}
+.tira i{display:block;background:var(--s1);border-radius:3px 3px 0 0;min-height:2px}.tira i.nf{background:var(--eixo)}
+pre.det{white-space:pre-wrap;font:inherit;font-size:12.5px;color:var(--ink2);margin:4px 0 0}
+@media (max-width:820px){.pont{grid-template-columns:1fr}}
 .legenda{display:flex;gap:14px;font-size:12.5px;color:var(--ink2);margin:0 0 6px}
 .legenda i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
 .graf{width:100%;position:relative}
@@ -188,9 +196,9 @@ const FORMS = {
   apartamento_registos: {titulo:'Apartamento', campos:[{k:'mes',l:'Mês (AAAA-MM)',t:'month',req:1},{k:'tipo',l:'Tipo',t:'select',o:TIPO_APT},{k:'valor',l:'Valor (€)',t:'money'},{k:'estado',l:'Estado',t:'select',o:EST_APT},{k:'data_pagamento',l:'Data de pagamento',t:'date'}]},
   treinos: {titulo:'Sessão de treino', campos:[{k:'data',l:'Data',t:'date',req:1,def:'hoje'},{k:'modalidade',l:'Modalidade',t:'select',o:MODAL},{k:'descricao',l:'Descrição',t:'text'},{k:'duracao_min',l:'Duração (min)',t:'int'},{k:'distancia_km',l:'Distância (km)',t:'money'},{k:'feito',l:'Realizada',t:'check'}]},
   dividas: {titulo:'Valor a pagar', campos:[{k:'tipo',l:'Tipo',t:'select',o:[['comissao','Comissão'],['outra','Outra']]},{k:'numero',l:'N.º / referência',t:'text'},{k:'entidade',l:'Entidade',t:'text',req:1},{k:'descricao',l:'Descrição',t:'text'},{k:'processo',l:'Processo',t:'text'},{k:'valor',l:'Valor (€)',t:'money',req:1},{k:'valor_pago',l:'Valor já pago (€)',t:'money',zero:1},{k:'data',l:'Data',t:'date',req:1,def:'hoje'}]},
-  habitos: {titulo:'Hábito', campos:[{k:'nome',l:'Nome',t:'text',req:1},{k:'tipo',l:'Tipo',t:'select',o:TIPO_HAB},{k:'ativo',l:'Ativo',t:'check',def:true}]}
+  habitos: {titulo:'Hábito', campos:[{k:'nome',l:'Nome',t:'text',req:1},{k:'tipo',l:'Tipo',t:'select',o:TIPO_HAB},{k:'unidade',l:'Unidade a contar (opcional), por exemplo: cigarros',t:'text'},{k:'auto',l:'Marcar automaticamente com dados do Garmin',t:'select',o:[[null,'Não'],['exercicio','Quando houver uma atividade no dia'],['passos','Quando os passos atingirem a meta']]},{k:'meta',l:'Meta de passos por dia',t:'money'},{k:'ativo',l:'Ativo',t:'check',def:true}]}
 };
-const TABELAS = [...Object.keys(FORMS), 'habitos_registos', 'eventos_calendario'];
+const TABELAS = [...Object.keys(FORMS), 'habitos_registos', 'eventos_calendario', 'dias_fechados', 'garmin_bem_estar', 'garmin_atividades'];
 
 /* ---------- armazenamento: Supabase ou local ---------- */
 const db = {}; TABELAS.forEach(t => db[t] = []);
@@ -273,10 +281,53 @@ function itensDoDia(d) {
       (c.recorrencia === 'mensal' && addMeses(c.data, (pd(d).getFullYear() - pd(c.data).getFullYear()) * 12 + pd(d).getMonth() - pd(c.data).getMonth()) === d)));
     if (oc) r.push({hora: c.hora || '', titulo: c.titulo, tag: '', t: 'compromissos', id: c.id});
   });
-  db.eventos_calendario.filter(e => String(e.data).slice(0, 10) <= d && String(e.data_fim || e.data).slice(0, 10) >= d).forEach(e => r.push({hora: e.dia_inteiro ? '' : (e.hora || ''), titulo: e.titulo + (e.local ? ' · ' + e.local : ''), tag: 'Google', t: '', id: e.id}));
+  db.eventos_calendario.filter(e => String(e.data).slice(0, 10) <= d && String(e.data_fim || e.data).slice(0, 10) >= d && !evConvertido(e)).forEach(e => r.push({hora: e.dia_inteiro ? '' : (e.hora || ''), titulo: e.titulo + (e.local ? ' · ' + e.local : ''), tag: 'Google', t: '', id: e.id}));
   db.obrigacoes.filter(o => o.ativo && o.proximo_vencimento <= d).forEach(o => { if (ocorrencias(o, d).includes(d)) r.push({hora: '', titulo: o.descricao + ' — ' + eur(o.valor), tag: 'Obrigação', t: 'obrigacoes', id: o.id}); });
   db.treinos.filter(t => t.data === d).forEach(t => r.push({hora: '', titulo: lab(MODAL, t.modalidade) + (t.descricao ? ' — ' + t.descricao : ''), tag: t.feito ? 'Treino ✓' : 'Treino', t: 'treinos', id: t.id}));
   return r.sort((a, b) => (a.hora || '99').localeCompare(b.hora || '99'));
+}
+const EMO = [['🏋', 'forca'], ['🚴', 'ciclismo'], ['🏃', 'corrida'], ['🏊', 'natacao']];
+const modEvento = e => (EMO.find(m => String(e.titulo).startsWith(m[0])) || [])[1] || null;
+const durEvento = t => { const h = /(\d+)\s*h\b/i.exec(t), m = /(\d+)\s*min/i.exec(t), v = (h ? +h[1] * 60 : 0) + (m ? +m[1] : 0); return v || null; };
+const evConvertido = e => db.treinos.some(t => t.google_id && t.google_id === e.google_id);
+const treinosEvento = (de, ate) => db.eventos_calendario.filter(e => { const d = String(e.data).slice(0, 10); return d >= de && d <= (ate || de) && modEvento(e) && !evConvertido(e); });
+const sessoes = (de, ate) => [...db.treinos.filter(t => t.data >= de && t.data <= ate), ...treinosEvento(de, ate).map(e => ({ev: e, data: String(e.data).slice(0, 10), modalidade: modEvento(e), duracao_min: durEvento(e.titulo), feito: false}))];
+const diaFechado = d => db.dias_fechados.find(x => String(x.data).slice(0, 10) === d);
+function pontuacaoHoje(fechar) {
+  const h = hoje(), pend = obrigJanela(0), atras = pend.length, trat = db.movimentos.filter(m => m.categoria === 'Obrigações' && String(m.data).slice(0, 10) === h).length, emDia = atras ? Math.round(100 * trat / (trat + atras)) : 100;
+  const ss = sessoes(h, h), feitos = ss.filter(t => t.feito).length, hs = db.habitos.filter(x => x.ativo), okH = hs.filter(x => x.tipo === 'bom' ? marcado(x.id, h) : !marcado(x.id, h)).length;
+  const partes = []; if (ss.length) partes.push(feitos / ss.length); if (hs.length) partes.push(okH / hs.length);
+  const corpo = partes.length ? Math.round(100 * partes.reduce((a, b) => a + b, 0) / partes.length) : null, fechado = !!diaFechado(h) || !!fechar, registo = fechado ? 100 : 0;
+  const cs = [emDia, corpo, registo].filter(v => v != null);
+  return {trat, emDia, corpo, registo, total: Math.round(cs.reduce((a, b) => a + b, 0) / cs.length), fechado, atras, prev: ss.length, feitos, hab: hs.length, okH};
+}
+// Automatismos com dados do Garmin (últimos 3 dias): hábitos automáticos e treinos do calendário realizados.
+const MOD_GARMIN = {Run: 'corrida', VirtualRun: 'corrida', TrailRun: 'corrida', Ride: 'ciclismo', VirtualRide: 'ciclismo', GravelRide: 'ciclismo', MountainBikeRide: 'ciclismo', Swim: 'natacao', OpenWaterSwim: 'natacao', WeightTraining: 'forca'};
+async function automatismos() {
+  const h = hoje(), feitos = [];
+  for (let i = 0; i < 3; i++) { const d = addDias(h, -i), ats = db.garmin_atividades.filter(a => String(a.data).slice(0, 10) === d), be = db.garmin_bem_estar.find(x => String(x.data).slice(0, 10) === d);
+    for (const hb of db.habitos.filter(x => x.ativo && x.auto && !marcado(x.id, d))) {
+      const ok = hb.auto === 'exercicio' ? ats.length > 0 : hb.auto === 'passos' ? num(hb.meta) > 0 && be && num(be.passos) >= num(hb.meta) : false;
+      if (ok) try { await inserir('habitos_registos', {habito_id: hb.id, data: d}); feitos.push(hb.nome + ' (' + fDM(d) + ')'); } catch (e) { /* já registado noutro dispositivo */ }
+    }
+    for (const e of treinosEvento(d, d)) { const a = ats.find(x => MOD_GARMIN[x.tipo] === modEvento(e) && !db.treinos.some(t => t.intervals_id === x.intervals_id)); if (!a) continue;
+      try { await inserir('treinos', {data: d, modalidade: modEvento(e), descricao: String(e.titulo).replace(/^[^\p{L}\p{N}]+/u, ''), duracao_min: a.duracao_seg != null ? Math.round(a.duracao_seg / 60) : durEvento(e.titulo), distancia_km: a.distancia_m != null ? r2(num(a.distancia_m) / 1000) : null, feito: true, google_id: e.google_id, intervals_id: a.intervals_id}); feitos.push('Treino: ' + e.titulo + ' (' + fDM(d) + ')'); } catch (err) { /* já registado */ }
+    }
+  }
+  return feitos;
+}
+function sequencia() { let d = diaFechado(hoje()) ? hoje() : addDias(hoje(), -1), n = 0; while (diaFechado(d)) { n++; d = addDias(d, -1); } return n; }
+function cartaoPontuacao() {
+  const p = pontuacaoHoje(), h = hoje(), seq = sequencia(), dias = Array.from({length: 14}, (_, i) => addDias(h, i - 13));
+  const med = (rot, v, sub) => `<div style="display:flex;justify-content:space-between;font-size:13px"><span>${rot}</span><span style="color:var(--ink2)">${v == null ? 'sem dados' : v + ' / 100'}</span></div><div class="medidor"><i style="width:${v || 0}%"></i></div><div class="nota" style="margin:-6px 0 10px">${sub}</div>`;
+  return `<div class="cartao" style="margin-bottom:12px"><div class="pont"><div><div class="tile"><div class="rot">Pontuação de hoje</div><div class="num">${p.total}</div><div class="sub">${p.fechado ? st('bom', '✓ Dia fechado') : st('avi', '● Dia por fechar')} · sequência: ${seq} ${seq === 1 ? 'dia' : 'dias'}</div></div>
+      ${p.fechado ? '' : '<button class="b pri" style="margin-top:10px" data-act="fechardia">Fechar o dia</button>'}</div>
+    <div>${med('Em dia', p.emDia, p.atras ? p.atras + ' obrigação(ões) por tratar (de hoje ou em atraso) · ' + p.trat + ' tratada(s) hoje' : p.trat ? p.trat + ' obrigação(ões) tratada(s) hoje, nada pendente' : 'nada a vencer hoje nem em atraso')}
+      ${med('Corpo', p.corpo, (p.prev ? p.feitos + ' de ' + p.prev + ' treino(s)' : 'sem treino previsto') + ' · ' + (p.hab ? p.okH + ' de ' + p.hab + ' hábito(s)' : 'sem hábitos definidos'))}
+      ${med('Registo', p.registo, p.fechado ? 'dia fechado' : 'conta quando fechar o dia')}</div></div>
+    <div class="tira" role="img" aria-label="Pontuação dos últimos 14 dias">${dias.map(d => { const f = diaFechado(d), v = d === h ? p.total : f && f.pontuacao != null ? f.pontuacao : null;
+      return `<div title="${fData(d)}: ${v == null ? (f ? 'fechado, sem pontuação' : 'não fechado') : v + (d === h && !f ? ' (por fechar)' : '')}"><i class="${f || d === h ? '' : 'nf'}" style="height:${v == null ? 2 : Math.max(2, v * .38)}px"></i>${Number(d.slice(8))}</div>`; }).join('')}</div>
+    <p class="nota">Pontuação = média de Em dia, Corpo e Registo (componentes sem dados não entram). Um mau hábito conta como evitado enquanto não for marcado. A pontuação fica guardada no momento em que fecha o dia.</p></div>`;
 }
 const marcado = (hid, d) => db.habitos_registos.find(r => r.habito_id === hid && String(r.data).slice(0, 10) === d);
 function metricaHabito(hb) {
@@ -287,7 +338,7 @@ function metricaHabito(hb) {
 }
 
 /* ---------- peças de interface ---------- */
-const ui = {vista: 'hoje', agModo: 'semana', agRef: hoje(), mes: hoje().slice(0, 7), trRef: hoje(), projRec: false, fatTodas: false};
+const ui = {semRef: hoje(), vista: 'hoje', agModo: 'semana', agRef: hoje(), mes: hoje().slice(0, 7), trRef: hoje(), projRec: false, fatTodas: false};
 let graficos = {};
 const tile = (rot, val, sub) => `<div class="cartao tile"><div class="rot">${esc(rot)}</div><div class="val">${esc(val)}</div><div class="sub">${sub || '&nbsp;'}</div></div>`;
 const bNovo = (t, txt, defs) => `<button class="b" data-act="novo" data-t="${t}" data-defs="${esc(JSON.stringify(defs || {}))}">+ ${esc(txt)}</button>`;
@@ -380,12 +431,12 @@ function secAnalise() {
 const VISTAS = {
   hoje: ['Hoje', () => {
     const h = hoje(), ob30 = obrigJanela(30), atras = ob30.filter(x => x.atraso), pr = porReceber(), venc = pr.filter(vencida);
-    const sem0 = segunda(h), trSem = db.treinos.filter(t => t.data >= sem0 && t.data <= addDias(sem0, 6)), its = itensDoDia(h).filter(x => x.t === 'compromissos' || x.tag === 'Google');
+    const sem0 = segunda(h), trSem = sessoes(sem0, addDias(sem0, 6)), its = itensDoDia(h).filter(x => x.t === 'compromissos' || x.tag === 'Google');
     const ob7 = ob30.filter(x => x.atraso || x.data <= addDias(h, 7));
     const procs = db.processos.filter(p => p.estado === 'em_curso').sort((a, b) => (a.prazo || '9').localeCompare(b.prazo || '9'));
     const m = h.slice(0, 7);
     return `<form class="cartao" id="rapido" style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap"><input id="rapTxt" aria-label="Registo rápido" placeholder="Registo rápido: 45 € combustível empresa" style="flex:1;min-width:200px;padding:8px;border:1px solid var(--eixo);border-radius:8px;background:var(--sup);color:var(--ink);font:inherit"><button class="b pri" type="submit">Registar</button></form>
-    <div class="grelha">${tile('Caixa da empresa', eur(saldoContas('empresa')), db.contas.some(c => c.ambito === 'empresa') ? '' : 'sem contas registadas')}
+    ${cartaoPontuacao()}<div class="grelha">${tile('Caixa da empresa', eur(saldoContas('empresa')), db.contas.some(c => c.ambito === 'empresa') ? '' : 'sem contas registadas')}
       ${tile('Por receber de clientes', eur(soma(pr, aberto)), venc.length ? st('cri', '⚠ ' + venc.length + ' vencida(s): ' + eur(soma(venc, aberto))) : pr.length + ' fatura(s) em aberto')}
       ${tile('A pagar (comissões e fornecedores)', eur(totalAPagar()), dividasAbertas().length + ' comissão(ões) · ' + fornPorPagar().length + ' despesa(s)')}
       ${tile('Contas pessoais', eur(saldoContas('pessoal')), db.contas.some(c => c.ambito === 'pessoal') ? '' : 'sem contas registadas')}
@@ -396,7 +447,7 @@ const VISTAS = {
       <div class="cartao"><h3>Treino — esta semana</h3><div class="sub" style="color:var(--ink2);font-size:13px;margin-bottom:6px">${trSem.filter(t => t.feito).length} de ${trSem.length} sessões realizadas</div>
         ${trSem.filter(t => t.data === h).length ? '<ul class="lista">' + trSem.filter(t => t.data === h).map(liTreino).join('') + '</ul>' : '<div class="vazio">Sem sessões marcadas para hoje.</div>'}</div>
       <div class="cartao"><h3>Hábitos de hoje</h3>${db.habitos.filter(x => x.ativo).length ? '<div class="chips">' + db.habitos.filter(x => x.ativo).map(hb => { const on = !!marcado(hb.id, h);
-        return `<button class="chip" aria-pressed="${on}" data-act="habito" data-id="${esc(hb.id)}" data-d="${h}">${on ? (hb.tipo === 'bom' ? '✓ ' : '✕ ') : ''}${esc(hb.nome)}</button>`; }).join('') + '</div><p class="nota">Bom hábito: marcar quando cumprido. Mau hábito: marcar quando ocorreu.</p>' : '<div class="vazio">Sem hábitos definidos.</div>'}</div>
+        return `<button class="chip" aria-pressed="${on}" data-act="habito" data-id="${esc(hb.id)}" data-d="${h}">${on ? (hb.tipo === 'bom' ? '✓ ' : '✕ ') : ''}${esc(hb.nome)}${on && marcado(hb.id, h).quantidade != null ? ' · ' + num(marcado(hb.id, h).quantidade) + ' ' + esc(hb.unidade || '') : ''}</button>`; }).join('') + '</div><p class="nota">Bom hábito: marcar quando cumprido. Mau hábito: marcar quando ocorreu.</p>' : '<div class="vazio">Sem hábitos definidos.</div>'}</div>
       <div class="cartao"><h3>Apartamento — ${esc(fMes(m))}</h3><ul class="lista">${TIPO_APT.map(([k, l]) => { const r = db.apartamento_registos.find(x => x.mes === m && x.tipo === k);
         return `<li><span class="t">${l}</span><span>${r && r.valor != null ? eur(r.valor) : ''}</span>${!r ? st('', 'Sem registo') : r.estado === 'pago' ? st('bom', '✓ Pago') : st('avi', '● Pendente')}</li>`; }).join('')}</ul></div>
       <div class="cartao"><h3>Empresa — processos e propostas</h3><ul class="lista">${procs.slice(0, 4).map(p => `<li><span class="t">${esc(p.nome)}</span>${p.prazo ? estadoVenc(p.prazo) : st('', 'Sem prazo')}</li>`).join('') || '<li class="vazio">Sem processos em curso.</li>'}
@@ -476,27 +527,56 @@ const VISTAS = {
       <p class="nota">Este separador é um resumo introduzido à mão; não está sincronizado com outras aplicações.</p></div>`;
   }],
   treino: ['Treino', () => {
-    const s0 = segunda(ui.trRef), h = hoje(), sem = db.treinos.filter(t => t.data >= s0 && t.data <= addDias(s0, 6));
-    const fut = db.treinos.filter(t => t.data > addDias(s0, 6)).sort((a, b) => a.data.localeCompare(b.data)).slice(0, 30);
+    const s0 = segunda(ui.trRef), h = hoje(), sem = sessoes(s0, addDias(s0, 6));
+    const fut = sessoes(addDias(s0, 7), addDias(s0, 400)).sort((a, b) => a.data.localeCompare(b.data)).slice(0, 30);
     const porMod = MODAL.map(([k, l]) => { const x = sem.filter(t => t.modalidade === k); return x.length ? [l, x.filter(t => t.feito).length + ' / ' + x.length, soma(x, t => t.duracao_min) + ' min', soma(x.filter(t => t.feito), t => t.duracao_min) + ' min'] : null; }).filter(Boolean);
     return cab('Semana de ' + fDM(s0) + ' a ' + fData(addDias(s0, 6)), `<button class="b mini" data-act="trnav" data-n="-1" aria-label="Semana anterior">‹</button><button class="b mini" data-act="trnav" data-n="0">Esta semana</button><button class="b mini" data-act="trnav" data-n="1" aria-label="Semana seguinte">›</button>` + bNovo('treinos', 'Sessão', {data: ui.trRef})).replace('class="cab"', 'class="cab" style="margin-top:0"') +
       `<div class="grelha" style="margin-bottom:12px">${tile('Sessões realizadas', sem.filter(t => t.feito).length + ' de ' + sem.length)}${tile('Tempo planeado', soma(sem, t => t.duracao_min) + ' min')}${tile('Tempo realizado', soma(sem.filter(t => t.feito), t => t.duracao_min) + ' min')}</div>
       <div class="semana">${DIAS.map((n, i) => { const d = addDias(s0, i), ts = sem.filter(t => t.data === d);
         return `<div class="dia${d === h ? ' hoje' : ''}"><div class="dt"><b>${n} ${d.slice(8)}</b><button class="b mini" data-act="novo" data-t="treinos" data-defs="${esc(JSON.stringify({data: d}))}" aria-label="Nova sessão em ${fData(d)}">+</button></div>${ts.length ? '<ul class="lista">' + ts.map(liTreino).join('') + '</ul>' : '<div class="vazio">—</div>'}</div>`; }).join('')}</div>` +
-      cab('Por modalidade nesta semana') + `<div class="cartao">${tabela([{l:'Modalidade'},{l:'Sessões (feitas / planeadas)'},{l:'Planeado',n:1},{l:'Realizado',n:1}], porMod, 'Sem sessões nesta semana.')}</div>` +
-      cab('Programado para depois desta semana') + `<div class="cartao">${tabela([{l:'Data'},{l:'Modalidade'},{l:'Descrição'},{l:'Duração',n:1},{l:''}], fut.map(t => [fData(t.data), lab(MODAL, t.modalidade), esc(t.descricao || '—'), t.duracao_min ? t.duracao_min + ' min' : '—', bEdit('treinos', t.id)]), 'Sem sessões futuras registadas.')}
-      <p class="nota">As sessões são introduzidas à mão. A sincronização com o Garmin ainda não está implementada.</p></div>`;
+      secGarmin() + cab('Por modalidade nesta semana') + `<div class="cartao">${tabela([{l:'Modalidade'},{l:'Sessões (feitas / planeadas)'},{l:'Planeado',n:1},{l:'Realizado',n:1}], porMod, 'Sem sessões nesta semana.')}</div>` +
+      cab('Programado para depois desta semana') + `<div class="cartao">${tabela([{l:'Data'},{l:'Modalidade'},{l:'Descrição'},{l:'Duração',n:1},{l:''}], fut.map(t => [fData(t.data), lab(MODAL, t.modalidade), esc(t.ev ? t.ev.titulo : t.descricao || '—'), t.duracao_min ? t.duracao_min + ' min' : '—', t.ev ? '<span class="tag">Google</span>' : bEdit('treinos', t.id)]), 'Sem sessões futuras registadas.')}
+      <p class="nota">As sessões marcadas «Google» vêm do calendário de treinos (reconhecidas pelo símbolo no início do título); «Feito» cria o registo da sessão realizada. A sincronização com o Garmin ainda não está implementada.</p></div>`;
+  }],
+  semana: ['Semana', () => {
+    const s0 = segunda(ui.semRef), s6 = addDias(s0, 6), h = hoje(), dias = Array.from({length: 7}, (_, i) => addDias(s0, i)), dec = dias.filter(d => d <= h);
+    const fech = dias.map(diaFechado).filter(Boolean), pts = fech.filter(f => f.pontuacao != null), ss = sessoes(s0, s6), hs = db.habitos.filter(x => x.ativo), bons = hs.filter(x => x.tipo === 'bom'), maus = hs.filter(x => x.tipo === 'mau');
+    const nB = dec.reduce((n, d) => n + bons.filter(x => marcado(x.id, d)).length, 0), nM = dec.reduce((n, d) => n + maus.filter(x => marcado(x.id, d)).length, 0);
+    const mv = (a, tp) => soma(db.movimentos.filter(m => m.ambito === a && m.tipo === tp && m.data >= s0 && m.data <= s6), m => m.valor);
+    const fat = soma(db.faturas.filter(f => f.data_emissao >= s0 && f.data_emissao <= s6), f => f.valor), rec = r2(db.faturas.reduce((t, f) => t + soma(pagsDe(f).filter(g => g.data >= s0 && g.data <= s6), g => g.valor), 0));
+    return cab('Semana de ' + fDM(s0) + ' a ' + fData(s6), `<button class="b mini" data-act="semnav" data-n="-1" aria-label="Semana anterior">‹</button><button class="b mini" data-act="semnav" data-n="0">Esta semana</button><button class="b mini" data-act="semnav" data-n="1" aria-label="Semana seguinte">›</button>`).replace('class="cab"', 'class="cab" style="margin-top:0"') +
+      `<div class="grelha">${tile('Dias fechados', fech.length + ' de ' + dec.length, dec.length < 7 ? 'semana em curso' : '')}${tile('Pontuação média', pts.length ? String(Math.round(soma(pts, f => f.pontuacao) / pts.length)) : '—', pts.length ? 'sobre ' + pts.length + ' dia(s) fechado(s)' : 'sem dias fechados')}
+      ${tile('Treino', ss.filter(t => t.feito).length + ' de ' + ss.length, soma(ss.filter(t => t.feito), t => t.duracao_min) + ' min realizados')}
+      ${tile('Bons hábitos', bons.length && dec.length ? Math.round(100 * nB / (bons.length * dec.length)) + ' %' : '—', bons.length ? nB + ' de ' + bons.length * dec.length + ' possíveis' : 'sem bons hábitos definidos')}
+      ${tile('Maus hábitos', maus.length ? String(nM) : '—', maus.length ? 'ocorrência(s) registada(s)' : 'sem maus hábitos definidos')}</div>
+      <div class="grelha" style="margin-top:12px">${tile('Despesas pessoais', eur(mv('pessoal', 'despesa')))}${tile('Despesas da empresa', eur(mv('empresa', 'despesa')))}${tile('Faturado', eur(fat), 'com IVA')}${tile('Recebido de clientes', eur(rec))}</div>` +
+      (hs.some(x => x.unidade) ? cab('Quantidades da semana') + `<div class="cartao">${tabela([{l:'Hábito'}, ...dias.map((d, i) => ({l: DIAS[i], n: 1})), {l:'Total',n:1}], hs.filter(x => x.unidade).map(x => { const v = dias.map(d => { const r = marcado(x.id, d); return r ? num(r.quantidade) : 0; });
+        return [esc(x.nome) + ' <span class="tag">' + esc(x.unidade) + '</span>', ...v.map(q => q || '—'), v.reduce((a, c) => a + c, 0)]; }), '')}</div>` : '') +
+      cab('Dia a dia') + `<div class="cartao">${tabela([{l:'Dia'},{l:'Fecho'},{l:'Pontuação',n:1},{l:'Treinos'},{l:'Bons hábitos'},{l:'Nota'}], dias.map((d, i) => { const f = diaFechado(d), sd = ss.filter(t => t.data === d);
+        return [DIAS[i] + ' ' + fDM(d), d > h ? '—' : f ? st('bom', '✓ Fechado') : st('avi', '● Por fechar'), f && f.pontuacao != null ? f.pontuacao : '—', sd.length ? sd.filter(t => t.feito).length + ' de ' + sd.length : '—', bons.length && d <= h ? bons.filter(x => marcado(x.id, d)).length + ' de ' + bons.length : '—', esc(f && f.nota || '')]; }), '')}</div>`;
   }],
   habitos: ['Hábitos', () => {
     const h = hoje(), dias = Array.from({length: 7}, (_, i) => addDias(h, -i)), hs = db.habitos.filter(x => x.ativo), inat = db.habitos.filter(x => !x.ativo);
     const bloco = tp => { const l = hs.filter(x => x.tipo === tp); return `<div class="cartao" style="margin-bottom:12px"><h3>${tp === 'bom' ? 'Bons hábitos — marcar quando cumprido' : 'Maus hábitos — marcar quando ocorreu'}</h3>${
       tabela([{l:'Hábito'}, ...dias.map(d => ({l: d === h ? 'hoje' : DIAS[(pd(d).getDay() + 6) % 7] + ' ' + d.slice(8)})), {l:'Indicador'}, {l:''}], l.map(hb => [esc(hb.nome), ...dias.map(d => { const on = !!marcado(hb.id, d);
-        return `<button class="hb" aria-pressed="${on}" aria-label="${esc(hb.nome)}, ${fData(d)}" data-act="habito" data-id="${esc(hb.id)}" data-d="${d}">${on ? (tp === 'bom' ? '✓' : '✕') : ''}</button>`; }), esc(metricaHabito(hb)), bEdit('habitos', hb.id)]), tp === 'bom' ? 'Sem bons hábitos definidos.' : 'Sem maus hábitos definidos.')}</div>`; };
+        return `<button class="hb" aria-pressed="${on}" aria-label="${esc(hb.nome)}, ${fData(d)}" data-act="habito" data-id="${esc(hb.id)}" data-d="${d}">${on ? (marcado(hb.id, d).quantidade != null ? num(marcado(hb.id, d).quantidade) : tp === 'bom' ? '✓' : '✕') : ''}</button>`; }), esc(metricaHabito(hb)), bEdit('habitos', hb.id)]), tp === 'bom' ? 'Sem bons hábitos definidos.' : 'Sem maus hábitos definidos.')}</div>`; };
     return cab('Hábitos — últimos 7 dias (mais recente primeiro)', bNovo('habitos', 'Hábito')).replace('class="cab"', 'class="cab" style="margin-top:0"') + bloco('bom') + bloco('mau') +
       (inat.length ? `<details><summary>Inativos (${inat.length})</summary>${tabela([{l:'Hábito'},{l:'Tipo'},{l:''}], inat.map(x => [esc(x.nome), lab(TIPO_HAB, x.tipo), bEdit('habitos', x.id)]), '')}</details>` : '');
   }]
 };
-function liTreino(t) { return `<li><button class="hb" aria-pressed="${!!t.feito}" aria-label="Marcar como realizada" data-act="feito" data-id="${esc(t.id)}">${t.feito ? '✓' : ''}</button><span class="t"><button class="item" data-act="editar" data-t="treinos" data-id="${esc(t.id)}">${esc(lab(MODAL, t.modalidade))}${t.descricao ? ' — ' + esc(t.descricao) : ''}</button>${t.duracao_min ? '<span style="color:var(--mut)"> ' + t.duracao_min + ' min</span>' : ''}</span></li>`; }
+function secGarmin() {
+  const h = hoje(), dias = Array.from({length: 7}, (_, i) => addDias(h, -i)), be = d => db.garmin_bem_estar.find(x => String(x.data).slice(0, 10) === d) || {};
+  const hm = s => s == null ? '—' : Math.floor(s / 3600) + ' h ' + pad(Math.round(s % 3600 / 60)) + ' min', v = (x, u) => x == null ? '—' : num(x) + (u || '');
+  const ats = db.garmin_atividades.slice().sort((a, b) => String(b.data).localeCompare(String(a.data))).slice(0, 15);
+  const ult = [...db.garmin_bem_estar, ...db.garmin_atividades].map(x => x.sincronizado_em).sort().pop();
+  return cab('Garmin — últimos 7 dias') + `<div class="cartao">${tabela([{l:'Dia'},{l:'Passos',n:1},{l:'Sono',n:1},{l:'FC em repouso',n:1},{l:'VFC',n:1},{l:'Peso',n:1}],
+      dias.map(d => { const x = be(d); return [d === h ? 'hoje' : fDM(d), v(x.passos), hm(x.sono_seg), v(x.fc_repouso, ' bpm'), v(x.hrv, ' ms'), v(x.peso, ' kg')]; }), '')}
+      <p class="nota">Dados recebidos do Garmin através do intervals.icu, atualizados de 2 em 2 horas${ult ? ' (última leitura: ' + esc(String(ult).slice(0, 16).replace('T', ' ')) + ' UTC)' : ' (ainda sem leituras)'}. Um traço significa que o intervals.icu não enviou esse valor.</p></div>` +
+    cab('Garmin — atividades realizadas') + `<div class="cartao">${tabela([{l:'Data'},{l:'Tipo'},{l:'Nome'},{l:'Duração',n:1},{l:'Distância',n:1},{l:'Carga',n:1}],
+      ats.map(a => [fData(a.data), esc(a.tipo || '—'), esc(a.nome || '—'), hm(a.duracao_seg), a.distancia_m == null ? '—' : (num(a.distancia_m) / 1000).toFixed(1).replace('.', ',') + ' km', v(a.carga)]), 'O intervals.icu ainda não devolveu nenhuma atividade.')}</div>`;
+}
+function liTreino(t) { if (t.ev) return `<li><button class="hb" aria-pressed="false" aria-label="Marcar como realizada" data-act="fazerev" data-id="${esc(t.ev.id)}"></button><span class="t">${esc(t.ev.titulo)} <span class="tag">Google</span>${t.ev.descricao ? `<details><summary>Detalhe</summary><pre class="det">${esc(t.ev.descricao)}</pre></details>` : ''}</span></li>`;
+  return `<li><button class="hb" aria-pressed="${!!t.feito}" aria-label="Marcar como realizada" data-act="feito" data-id="${esc(t.id)}">${t.feito ? '✓' : ''}</button><span class="t"><button class="item" data-act="editar" data-t="treinos" data-id="${esc(t.id)}">${esc(lab(MODAL, t.modalidade))}${t.descricao ? ' — ' + esc(t.descricao) : ''}</button>${t.duracao_min ? '<span style="color:var(--mut)"> ' + t.duracao_min + ' min</span>' : ''}</span></li>`; }
 
 /* ---------- desenho ---------- */
 function render() {
@@ -581,7 +661,7 @@ function lerForm(def) {
     if (c.t === 'money') { if (v === '') { d[c.k] = c.zero ? 0 : null; } else { const n = Number(v.includes(',') ? v.replace(/[.\s]/g, '').replace(',', '.') : v.replace(/\s/g, ''));
         if (!isFinite(n) || n < 0 && c.k !== 'saldo') throw new Error('Valor inválido em "' + c.l + '".'); d[c.k] = n; } }
     else if (c.t === 'int') d[c.k] = v === '' ? null : Math.round(Number(v));
-    else d[c.k] = v === '' ? null : v;
+    else d[c.k] = v === '' || v === 'null' ? null : v;
     if (c.t === 'month' && d[c.k] && !/^\d{4}-(0[1-9]|1[0-2])$/.test(d[c.k])) throw new Error('O mês deve ter o formato AAAA-MM.');
     if (c.req && d[c.k] == null) throw new Error('Preencha o campo "' + c.l + '".');
   }
@@ -678,9 +758,28 @@ const ACOES = {
   agmodo: b => { ui.agModo = b.dataset.m; },
   agnav: b => { const n = Number(b.dataset.n); ui.agRef = n === 0 ? hoje() : ui.agModo === 'dia' ? addDias(ui.agRef, n) : ui.agModo === 'semana' ? addDias(ui.agRef, 7 * n) : addMeses(ui.agRef.slice(0, 8) + '01', n); },
   verdia: b => { ui.agRef = b.dataset.d; ui.agModo = 'dia'; },
+  semnav: b => { const n = Number(b.dataset.n); ui.semRef = n === 0 ? hoje() : addDias(ui.semRef, 7 * n); },
+  fazerev: async b => { const e = db.eventos_calendario.find(x => x.id === b.dataset.id); if (!e) return;
+    await inserir('treinos', {data: String(e.data).slice(0, 10), modalidade: modEvento(e) || 'outro', descricao: String(e.titulo).replace(/^[^\p{L}\p{N}]+/u, ''), duracao_min: durEvento(e.titulo), feito: true, google_id: e.google_id}); },
+  fechardia: () => { const p = pontuacaoHoje(true);
+    $('#dlg').innerHTML = `<form id="frmFecho"><h2>Fechar o dia</h2><p class="nota" style="margin:0 0 10px">Pontuação com o dia fechado: <b>${p.total}</b> (Em dia ${p.emDia} · Corpo ${p.corpo == null ? 'sem dados' : p.corpo} · Registo 100). Confirme primeiro os treinos, hábitos e despesas de hoje.</p>
+      <label class="c">Nota do dia (opcional)<input id="fechoNota" type="text" maxlength="300"></label><div class="erro" id="fechoErr"></div><div class="acoes"><span class="esp"></span><button type="button" class="b" data-act="fechar">Cancelar</button><button type="submit" class="b pri">Fechar o dia</button></div></form>`;
+    $('#dlg').showModal();
+    $('#frmFecho').addEventListener('submit', async ev => { ev.preventDefault();
+      try { const q = pontuacaoHoje(true); await inserir('dias_fechados', {data: hoje(), nota: $('#fechoNota').value.trim() || null, pontuacao: q.total, componentes: {em_dia: q.emDia, corpo: q.corpo, registo: 100}}); $('#dlg').close(); render(); }
+      catch (err) { $('#fechoErr').textContent = msgErro(err); } });
+    return false; },
   trnav: b => { const n = Number(b.dataset.n); ui.trRef = n === 0 ? hoje() : addDias(ui.trRef, 7 * n); },
   feito: async b => { const t = db.treinos.find(x => x.id === b.dataset.id); if (t) await atualizar('treinos', t.id, {feito: !t.feito}); },
-  habito: async b => { const r = marcado(b.dataset.id, b.dataset.d); if (r) await eliminar('habitos_registos', r.id); else await inserir('habitos_registos', {habito_id: b.dataset.id, data: b.dataset.d}); },
+  habito: async b => { const r = marcado(b.dataset.id, b.dataset.d), hb = db.habitos.find(x => x.id === b.dataset.id), d = b.dataset.d;
+    if (r) { await eliminar('habitos_registos', r.id); return; }
+    if (!hb || !hb.unidade) { await inserir('habitos_registos', {habito_id: b.dataset.id, data: d}); return; }
+    $('#dlg').innerHTML = `<form id="frmQt"><h2>${esc(hb.nome)} — ${fData(d)}</h2><label class="c">Quantos ${esc(hb.unidade)}?<input id="qtVal" type="number" min="0" step="any" inputmode="decimal" required></label><div class="erro" id="qtErr"></div><div class="acoes"><span class="esp"></span><button type="button" class="b" data-act="fechar">Cancelar</button><button type="submit" class="b pri">Registar</button></div></form>`;
+    $('#dlg').showModal(); $('#qtVal').focus();
+    $('#frmQt').addEventListener('submit', async ev => { ev.preventDefault();
+      try { const q = Number($('#qtVal').value); if (!isFinite(q) || q < 0) throw new Error('Quantidade inválida.'); await inserir('habitos_registos', {habito_id: hb.id, data: d, quantidade: q}); $('#dlg').close(); render(); }
+      catch (err) { $('#qtErr').textContent = msgErro(err); } });
+    return false; },
   apt: b => { const r = db.apartamento_registos.find(x => x.mes === b.dataset.m && x.tipo === b.dataset.k); abrirForm('apartamento_registos', r && r.id, {mes: b.dataset.m, tipo: b.dataset.k}); },
   sair: async () => { await sb.auth.signOut(); location.reload(); }
 };
@@ -707,7 +806,8 @@ function ecraLogin(msg) {
     entrar(); });
 }
 async function entrar() {
-  try { await carregarTudo(); $('#sair').hidden = !sb; render(); }
+  try { await carregarTudo(); const f = diaFechado(hoje()); if (f && f.pontuacao == null) { const q = pontuacaoHoje(true); await atualizar('dias_fechados', f.id, {pontuacao: q.total, componentes: {em_dia: q.emDia, corpo: q.corpo, registo: 100}}); }
+    const auto = await automatismos(); $('#sair').hidden = !sb; render(); if (auto.length) toast('Marcado automaticamente pelo Garmin: ' + auto.join('; ')); }
   catch (err) { $('#app').innerHTML = `<div class="aviso"><b>Não foi possível ler os dados.</b> ${esc(msgErro(err))}</div>`; }
 }
 if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
