@@ -140,6 +140,7 @@ label.k{display:flex;gap:8px;align-items:center;margin:0 0 10px;font-size:13.5px
    Com os dois campos vazios, a app corre em modo local de demonstração:
    os dados ficam apenas neste navegador.
    ============================================================================ */
+const VERSAO = '9 · 20/11/2026';
 const CONFIG = {
   SUPABASE_URL: 'https://rpdwbxqalunmhfsgsbao.supabase.co',
   SUPABASE_KEY: 'sb_publishable_bHLohWmZHPBXqdVH9fPKcQ_vz6-zpyB',
@@ -291,7 +292,13 @@ const modEvento = e => (EMO.find(m => String(e.titulo).startsWith(m[0])) || [])[
 const durEvento = t => { const h = /(\d+)\s*h\b/i.exec(t), m = /(\d+)\s*min/i.exec(t), v = (h ? +h[1] * 60 : 0) + (m ? +m[1] : 0); return v || null; };
 const evConvertido = e => db.treinos.some(t => t.google_id && t.google_id === e.google_id);
 const treinosEvento = (de, ate) => db.eventos_calendario.filter(e => { const d = String(e.data).slice(0, 10); return d >= de && d <= (ate || de) && modEvento(e) && !evConvertido(e); });
-const sessoes = (de, ate) => [...db.treinos.filter(t => t.data >= de && t.data <= ate), ...treinosEvento(de, ate).map(e => ({ev: e, data: String(e.data).slice(0, 10), modalidade: modEvento(e), duracao_min: durEvento(e.titulo), feito: false}))];
+const MOD_GARMIN = {Run: 'corrida', VirtualRun: 'corrida', TrailRun: 'corrida', Ride: 'ciclismo', VirtualRide: 'ciclismo', GravelRide: 'ciclismo', MountainBikeRide: 'ciclismo', Swim: 'natacao', OpenWaterSwim: 'natacao', WeightTraining: 'forca'};
+const TIPO_GARMIN = {Run: 'Corrida', VirtualRun: 'Corrida', TrailRun: 'Corrida em trilho', Ride: 'Bicicleta', VirtualRide: 'Bicicleta em rolo', Swim: 'Natação', OpenWaterSwim: 'Natação em águas abertas', WeightTraining: 'Musculação', Walk: 'Caminhada', Hike: 'Caminhada'};
+// Sessões de um período: registos do painel, atividades do Garmin ainda não ligadas a um registo (feitas) e treinos do calendário por fazer.
+const sessoes = (de, ate) => [...db.treinos.filter(t => t.data >= de && t.data <= ate),
+  ...db.garmin_atividades.filter(a => { const d = String(a.data).slice(0, 10); return d >= de && d <= ate && !db.treinos.some(t => t.intervals_id && t.intervals_id === a.intervals_id); })
+    .map(a => ({ga: a, data: String(a.data).slice(0, 10), modalidade: MOD_GARMIN[a.tipo] || 'outro', duracao_min: a.duracao_seg != null ? Math.round(a.duracao_seg / 60) : null, feito: true})),
+  ...treinosEvento(de, ate).map(e => ({ev: e, data: String(e.data).slice(0, 10), modalidade: modEvento(e), duracao_min: durEvento(e.titulo), feito: false}))];
 const diaFechado = d => db.dias_fechados.find(x => String(x.data).slice(0, 10) === d);
 function pontuacaoHoje(fechar) {
   const h = hoje(), pend = obrigJanela(0), atras = pend.length, trat = db.movimentos.filter(m => m.categoria === 'Obrigações' && String(m.data).slice(0, 10) === h).length, emDia = atras ? Math.round(100 * trat / (trat + atras)) : 100;
@@ -302,7 +309,6 @@ function pontuacaoHoje(fechar) {
   return {trat, emDia, corpo, registo, total: Math.round(cs.reduce((a, b) => a + b, 0) / cs.length), fechado, atras, prev: ss.length, feitos, hab: hs.length, okH};
 }
 // Automatismos com dados do Garmin (últimos 3 dias): hábitos automáticos e treinos do calendário realizados.
-const MOD_GARMIN = {Run: 'corrida', VirtualRun: 'corrida', TrailRun: 'corrida', Ride: 'ciclismo', VirtualRide: 'ciclismo', GravelRide: 'ciclismo', MountainBikeRide: 'ciclismo', Swim: 'natacao', OpenWaterSwim: 'natacao', WeightTraining: 'forca'};
 async function automatismos() {
   const h = hoje(), feitos = [];
   for (let i = 0; i < 3; i++) { const d = addDias(h, -i), ats = db.garmin_atividades.filter(a => String(a.data).slice(0, 10) === d), be = db.garmin_bem_estar.find(x => String(x.data).slice(0, 10) === d);
@@ -338,7 +344,7 @@ function metricaHabito(hb) {
 }
 
 /* ---------- peças de interface ---------- */
-const ui = {semRef: hoje(), vista: 'hoje', agModo: 'semana', agRef: hoje(), mes: hoje().slice(0, 7), trRef: hoje(), projRec: false, fatTodas: false};
+const ui = {gmet: 'sono', semRef: hoje(), vista: 'hoje', agModo: 'semana', agRef: hoje(), mes: hoje().slice(0, 7), trRef: hoje(), projRec: false, fatTodas: false};
 let graficos = {};
 const tile = (rot, val, sub) => `<div class="cartao tile"><div class="rot">${esc(rot)}</div><div class="val">${esc(val)}</div><div class="sub">${sub || '&nbsp;'}</div></div>`;
 const bNovo = (t, txt, defs) => `<button class="b" data-act="novo" data-t="${t}" data-defs="${esc(JSON.stringify(defs || {}))}">+ ${esc(txt)}</button>`;
@@ -534,9 +540,9 @@ const VISTAS = {
       `<div class="grelha" style="margin-bottom:12px">${tile('Sessões realizadas', sem.filter(t => t.feito).length + ' de ' + sem.length)}${tile('Tempo planeado', soma(sem, t => t.duracao_min) + ' min')}${tile('Tempo realizado', soma(sem.filter(t => t.feito), t => t.duracao_min) + ' min')}</div>
       <div class="semana">${DIAS.map((n, i) => { const d = addDias(s0, i), ts = sem.filter(t => t.data === d);
         return `<div class="dia${d === h ? ' hoje' : ''}"><div class="dt"><b>${n} ${d.slice(8)}</b><button class="b mini" data-act="novo" data-t="treinos" data-defs="${esc(JSON.stringify({data: d}))}" aria-label="Nova sessão em ${fData(d)}">+</button></div>${ts.length ? '<ul class="lista">' + ts.map(liTreino).join('') + '</ul>' : '<div class="vazio">—</div>'}</div>`; }).join('')}</div>` +
-      secGarmin() + cab('Por modalidade nesta semana') + `<div class="cartao">${tabela([{l:'Modalidade'},{l:'Sessões (feitas / planeadas)'},{l:'Planeado',n:1},{l:'Realizado',n:1}], porMod, 'Sem sessões nesta semana.')}</div>` +
+      cab('Por modalidade nesta semana') + `<div class="cartao">${tabela([{l:'Modalidade'},{l:'Sessões (feitas / planeadas)'},{l:'Planeado',n:1},{l:'Realizado',n:1}], porMod, 'Sem sessões nesta semana.')}</div>` +
       cab('Programado para depois desta semana') + `<div class="cartao">${tabela([{l:'Data'},{l:'Modalidade'},{l:'Descrição'},{l:'Duração',n:1},{l:''}], fut.map(t => [fData(t.data), lab(MODAL, t.modalidade), esc(t.ev ? t.ev.titulo : t.descricao || '—'), t.duracao_min ? t.duracao_min + ' min' : '—', t.ev ? '<span class="tag">Google</span>' : bEdit('treinos', t.id)]), 'Sem sessões futuras registadas.')}
-      <p class="nota">As sessões marcadas «Google» vêm do calendário de treinos (reconhecidas pelo símbolo no início do título); «Feito» cria o registo da sessão realizada. A sincronização com o Garmin ainda não está implementada.</p></div>`;
+      <p class="nota">As sessões marcadas «Google» vêm do calendário de treinos (reconhecidas pelo símbolo no início do título); «Feito» cria o registo da sessão realizada. Quando o Garmin regista uma atividade da mesma modalidade no mesmo dia, a sessão fica feita automaticamente.</p></div>` + secGarmin();
   }],
   semana: ['Semana', () => {
     const s0 = segunda(ui.semRef), s6 = addDias(s0, 6), h = hoje(), dias = Array.from({length: 7}, (_, i) => addDias(s0, i)), dec = dias.filter(d => d <= h);
@@ -564,18 +570,35 @@ const VISTAS = {
       (inat.length ? `<details><summary>Inativos (${inat.length})</summary>${tabela([{l:'Hábito'},{l:'Tipo'},{l:''}], inat.map(x => [esc(x.nome), lab(TIPO_HAB, x.tipo), bEdit('habitos', x.id)]), '')}</details>` : '');
   }]
 };
+const GMET = {sono: ['Sono', x => x.sono_seg != null ? num(x.sono_seg) / 3600 : null, v => Math.floor(v) + ' h ' + pad(Math.round(v % 1 * 60)) + ' min', v => v.toFixed(1).replace('.', ',') + ' h'],
+  vfc: ['Variabilidade cardíaca', x => x.hrv != null ? num(x.hrv) : null, v => Math.round(v) + ' ms', v => Math.round(v) + ' ms'],
+  fc: ['Frequência em repouso', x => x.fc_repouso != null ? num(x.fc_repouso) : null, v => Math.round(v) + ' bpm', v => Math.round(v) + ' bpm'],
+  passos: ['Passos', x => x.passos != null ? num(x.passos) : null, v => new Intl.NumberFormat('pt-PT').format(Math.round(v)), v => new Intl.NumberFormat('pt-PT', {notation: 'compact'}).format(v)]};
 function secGarmin() {
-  const h = hoje(), dias = Array.from({length: 7}, (_, i) => addDias(h, -i)), be = d => db.garmin_bem_estar.find(x => String(x.data).slice(0, 10) === d) || {};
+  const h = hoje(), todos = db.garmin_bem_estar.filter(x => String(x.data).slice(0, 10) <= h).sort((a, b) => String(a.data).localeCompare(String(b.data)));
+  const dias = Array.from({length: 7}, (_, i) => addDias(h, -i)), be = d => todos.find(x => String(x.data).slice(0, 10) === d) || {};
   const hm = s => s == null ? '—' : Math.floor(s / 3600) + ' h ' + pad(Math.round(s % 3600 / 60)) + ' min', v = (x, u) => x == null ? '—' : num(x) + (u || '');
-  const ats = db.garmin_atividades.slice().sort((a, b) => String(b.data).localeCompare(String(a.data))).slice(0, 15);
+  const ats = db.garmin_atividades.slice().sort((a, b) => String(b.data).localeCompare(String(a.data))).slice(0, ui.gTodas ? 500 : 15);
   const ult = [...db.garmin_bem_estar, ...db.garmin_atividades].map(x => x.sincronizado_em).sort().pop();
-  return cab('Garmin — últimos 7 dias') + `<div class="cartao">${tabela([{l:'Dia'},{l:'Passos',n:1},{l:'Sono',n:1},{l:'FC em repouso',n:1},{l:'VFC',n:1},{l:'Peso',n:1}],
-      dias.map(d => { const x = be(d); return [d === h ? 'hoje' : fDM(d), v(x.passos), hm(x.sono_seg), v(x.fc_repouso, ' bpm'), v(x.hrv, ' ms'), v(x.peso, ' kg')]; }), '')}
-      <p class="nota">Dados recebidos do Garmin através do intervals.icu, atualizados de 2 em 2 horas${ult ? ' (última leitura: ' + esc(String(ult).slice(0, 16).replace('T', ' ')) + ' UTC)' : ' (ainda sem leituras)'}. Um traço significa que o intervals.icu não enviou esse valor.</p></div>` +
-    cab('Garmin — atividades realizadas') + `<div class="cartao">${tabela([{l:'Data'},{l:'Tipo'},{l:'Nome'},{l:'Duração',n:1},{l:'Distância',n:1},{l:'Carga',n:1}],
-      ats.map(a => [fData(a.data), esc(a.tipo || '—'), esc(a.nome || '—'), hm(a.duracao_seg), a.distancia_m == null ? '—' : (num(a.distancia_m) / 1000).toFixed(1).replace('.', ',') + ' km', v(a.carga)]), 'O intervals.icu ainda não devolveu nenhuma atividade.')}</div>`;
+  const d30 = addDias(h, -30), base = todos.filter(x => String(x.data).slice(0, 10) >= d30 && String(x.data).slice(0, 10) < h);
+  const leitura = k => { const m = GMET[k], vals = base.map(m[1]).filter(x => x != null), med = vals.length ? vals.reduce((a, c) => a + c, 0) / vals.length : null;
+    const ultimo = [...todos].reverse().find(x => m[1](x) != null), at = ultimo ? m[1](ultimo) : null, dif = at != null && med ? Math.round(100 * (at - med) / med) : null;
+    return tile(m[0], at == null ? '—' : m[2](at), at == null ? 'sem dados' : (String(ultimo.data).slice(0, 10) === h ? 'hoje' : fDM(ultimo.data)) + (dif == null ? '' : ' · ' + (dif > 0 ? '+' : '') + dif + ' % face à média de 30 dias (' + m[2](med) + ')')); };
+  const uc = [...todos].reverse().find(x => x.dados && x.dados.ctl != null), ctl = uc ? num(uc.dados.ctl) : null, atl = uc ? num(uc.dados.atl) : null;
+  const m = GMET[ui.gmet], pts = todos.filter(x => String(x.data).slice(0, 10) >= addDias(h, -59) && m[1](x) != null).map(x => ({d: String(x.data).slice(0, 10), v: Math.round(m[1](x) * 100) / 100}));
+  if (pts.length > 1) graficos.garmin = {tipo: 'linha', livre: true, pts, fv: m[2], fe: m[3], rot: m[0] + ' por dia'};
+  return cab('Corpo — leitura do Garmin') + `<div class="grelha">${leitura('sono')}${leitura('vfc')}${leitura('fc')}${leitura('passos')}</div>
+    <div class="grelha" style="margin-top:12px">${tile('Condição (carga de 42 dias)', ctl == null ? '—' : String(Math.round(ctl)))}${tile('Fadiga (carga de 7 dias)', atl == null ? '—' : String(Math.round(atl)))}${tile('Forma (condição − fadiga)', ctl == null ? '—' : (ctl - atl > 0 ? '+' : '') + Math.round(ctl - atl))}</div>
+    <div class="cartao" style="margin-top:12px"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px"><h3 style="margin:0;flex:1">${esc(m[0])} — últimos 60 dias</h3><span class="seg">${Object.entries(GMET).map(([k, x]) => `<button data-act="gmet" data-m="${k}" aria-pressed="${ui.gmet === k}">${{sono: 'Sono', vfc: 'VFC', fc: 'FC', passos: 'Passos'}[k]}</button>`).join('')}</span></div>
+      ${pts.length > 1 ? '<div class="graf" data-graf="garmin"></div>' : '<div class="vazio">Sem dados suficientes para o gráfico.</div>'}
+      <details><summary>Ver tabela dos últimos 7 dias</summary>${tabela([{l:'Dia'},{l:'Passos',n:1},{l:'Sono',n:1},{l:'FC em repouso',n:1},{l:'VFC',n:1},{l:'Peso',n:1}],
+        dias.map(d => { const x = be(d); return [d === h ? 'hoje' : fDM(d), v(x.passos), hm(x.sono_seg), v(x.fc_repouso, ' bpm'), v(x.hrv, ' ms'), v(x.peso, ' kg')]; }), '')}</details>
+      <p class="nota">Dados do Garmin recebidos através do intervals.icu, atualizados de 2 em 2 horas${ult ? ' (última leitura: ' + esc(String(ult).slice(0, 16).replace('T', ' ')) + ' UTC)' : ' (ainda sem leituras)'}. As percentagens comparam o último valor com a média dos 30 dias anteriores; são uma leitura descritiva, não uma avaliação clínica. Condição, fadiga e forma são os valores calculados pelo intervals.icu a partir da carga dos treinos.</p></div>` +
+    cab('Garmin — histórico de atividades (' + db.garmin_atividades.length + ')', db.garmin_atividades.length > 15 ? `<button class="b" data-act="gtodas">${ui.gTodas ? 'Ver só as 15 mais recentes' : 'Ver todas'}</button>` : '') + `<div class="cartao">${tabela([{l:'Data'},{l:'Tipo'},{l:'Nome'},{l:'Duração',n:1},{l:'Distância',n:1},{l:'Carga',n:1}],
+      ats.map(a => [fData(a.data), esc(TIPO_GARMIN[a.tipo] || a.tipo || '—'), esc(a.nome || '—'), hm(a.duracao_seg), a.distancia_m == null ? '—' : (num(a.distancia_m) / 1000).toFixed(1).replace('.', ',') + ' km', v(a.carga)]), 'O intervals.icu ainda não devolveu nenhuma atividade.')}</div>`;
 }
-function liTreino(t) { if (t.ev) return `<li><button class="hb" aria-pressed="false" aria-label="Marcar como realizada" data-act="fazerev" data-id="${esc(t.ev.id)}"></button><span class="t">${esc(t.ev.titulo)} <span class="tag">Google</span>${t.ev.descricao ? `<details><summary>Detalhe</summary><pre class="det">${esc(t.ev.descricao)}</pre></details>` : ''}</span></li>`;
+function liTreino(t) { if (t.ga) return `<li><span class="hb" style="display:inline-grid;place-items:center;background:var(--pri);color:var(--pri-ink);border-color:var(--pri)" aria-label="Realizada">✓</span><span class="t">${esc(TIPO_GARMIN[t.ga.tipo] || t.ga.tipo || 'Atividade')}${t.ga.nome ? ' — ' + esc(t.ga.nome) : ''} <span class="tag">Garmin</span><span style="color:var(--mut)"> ${t.duracao_min != null ? t.duracao_min + ' min' : ''}${t.ga.distancia_m ? ' · ' + (num(t.ga.distancia_m) / 1000).toFixed(1).replace('.', ',') + ' km' : ''}</span></span></li>`;
+  if (t.ev) return `<li><button class="hb" aria-pressed="false" aria-label="Marcar como realizada" data-act="fazerev" data-id="${esc(t.ev.id)}"></button><span class="t">${esc(t.ev.titulo)} <span class="tag">Google</span>${t.ev.descricao ? `<details><summary>Detalhe</summary><pre class="det">${esc(t.ev.descricao)}</pre></details>` : ''}</span></li>`;
   return `<li><button class="hb" aria-pressed="${!!t.feito}" aria-label="Marcar como realizada" data-act="feito" data-id="${esc(t.id)}">${t.feito ? '✓' : ''}</button><span class="t"><button class="item" data-act="editar" data-t="treinos" data-id="${esc(t.id)}">${esc(lab(MODAL, t.modalidade))}${t.descricao ? ' — ' + esc(t.descricao) : ''}</button>${t.duracao_min ? '<span style="color:var(--mut)"> ' + t.duracao_min + ' min</span>' : ''}</span></li>`; }
 
 /* ---------- desenho ---------- */
@@ -594,26 +617,26 @@ function desenharGraficos() {
     const g = graficos[el.dataset.graf]; if (!g) return;
     const W = Math.max(280, el.clientWidth), H = 230, m = {l: 62, r: 14, t: 14, b: 26}, pw = W - m.l - m.r, ph = H - m.t - m.b;
     let lo, hi, corpo = '';
-    if (g.tipo === 'linha') { const vs = g.pts.map(p => p.v); lo = Math.min(0, ...vs); hi = Math.max(0, ...vs); }
+    if (g.tipo === 'linha') { const vs = g.pts.map(p => p.v); lo = Math.min(...(g.livre ? [] : [0]), ...vs); hi = Math.max(...(g.livre ? [] : [0]), ...vs); }
     else { lo = 0; hi = Math.max(0, ...g.meses.map(x => Math.max(x.a, x.b))); }
     if (hi === lo) hi = lo + 100;
     const tk = ticks(lo, hi, 4); lo = tk[0]; hi = tk[tk.length - 1];
     const y = v => m.t + ph * (1 - (v - lo) / (hi - lo)), maxAbs = Math.max(Math.abs(lo), Math.abs(hi));
-    let svg = tk.map(v => `<line x1="${m.l}" x2="${W - m.r}" y1="${y(v)}" y2="${y(v)}" stroke="${v === 0 ? 'var(--eixo)' : 'var(--lin)'}"/><text x="${m.l - 8}" y="${y(v) + 4}" text-anchor="end" font-size="11" fill="var(--mut)">${esc(fEixo(v, maxAbs))}</text>`).join('');
+    let svg = tk.map(v => `<line x1="${m.l}" x2="${W - m.r}" y1="${y(v)}" y2="${y(v)}" stroke="${v === 0 ? 'var(--eixo)' : 'var(--lin)'}"/><text x="${m.l - 8}" y="${y(v) + 4}" text-anchor="end" font-size="11" fill="var(--mut)">${esc(g.fe ? g.fe(v) : fEixo(v, maxAbs))}</text>`).join('');
     if (g.tipo === 'linha') {
       const n = g.pts.length, x = i => m.l + pw * i / (n - 1);
-      let d = `M${x(0)} ${y(g.pts[0].v)}`; for (let i = 1; i < n; i++) d += `H${x(i)}V${y(g.pts[i].v)}`;
-      for (let i = 0, ps = W < 520 ? 30 : 15; i < n; i += ps) svg += `<text x="${x(i)}" y="${H - 8}" text-anchor="${i === 0 ? 'start' : i >= n - 1 ? 'end' : 'middle'}" font-size="11" fill="var(--mut)">${fDM(g.pts[i].d)}</text>`;
+      let d = `M${x(0)} ${y(g.pts[0].v)}`; for (let i = 1; i < n; i++) d += g.livre ? `L${x(i)} ${y(g.pts[i].v)}` : `H${x(i)}V${y(g.pts[i].v)}`;
+      for (let i = 0, ps = g.livre ? (W < 520 ? 14 : 7) : (W < 520 ? 30 : 15); i < n; i += ps) svg += `<text x="${x(i)}" y="${H - 8}" text-anchor="${i === 0 ? 'start' : i >= n - 1 ? 'end' : 'middle'}" font-size="11" fill="var(--mut)">${fDM(g.pts[i].d)}</text>`;
       const im = g.pts.reduce((b, p, i) => p.v < g.pts[b].v ? i : b, 0);
       corpo = `<path d="${d}" fill="none" stroke="var(--s1)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
-        ${g.pts[im].v < g.pts[n - 1].v ? `<circle cx="${x(im)}" cy="${y(g.pts[im].v)}" r="4" fill="var(--s1)" stroke="var(--sup)" stroke-width="2"/>` : ''}
+        ${!g.livre && g.pts[im].v < g.pts[n - 1].v ? `<circle cx="${x(im)}" cy="${y(g.pts[im].v)}" r="4" fill="var(--s1)" stroke="var(--sup)" stroke-width="2"/>` : ''}
         <circle cx="${x(n - 1)}" cy="${y(g.pts[n - 1].v)}" r="4" fill="var(--s1)" stroke="var(--sup)" stroke-width="2"/>
         <line class="mira" y1="${m.t}" y2="${m.t + ph}" stroke="var(--eixo)" style="display:none"/><rect class="alvo" x="${m.l}" y="${m.t}" width="${pw}" height="${ph}" fill="transparent"/>`;
-      el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" height="${H}" role="img" aria-label="Saldo previsto por dia nos próximos 90 dias">${svg}${corpo}</svg>`;
+      el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" height="${H}" role="img" aria-label="${esc(g.rot || 'Saldo previsto por dia nos próximos 90 dias')}">${svg}${corpo}</svg>`;
       const alvo = el.querySelector('.alvo'), mira = el.querySelector('.mira');
       alvo.addEventListener('pointermove', e => { const r = alvo.getBoundingClientRect(), i = Math.max(0, Math.min(n - 1, Math.round((e.clientX - r.left) / r.width * (n - 1)))), p = g.pts[i];
         mira.setAttribute('x1', x(i)); mira.setAttribute('x2', x(i)); mira.style.display = '';
-        dica(e, eur(p.v), [fData(p.d), ...g.ev.filter(v => v.data === p.d).map(v => v.desc + ': ' + eur(v.valor))], ['var(--s1)']); });
+        dica(e, g.fv ? g.fv(p.v) : eur(p.v), [fData(p.d), ...(g.ev || []).filter(v => v.data === p.d).map(v => v.desc + ': ' + eur(v.valor))], ['var(--s1)']); });
       alvo.addEventListener('pointerleave', () => { mira.style.display = 'none'; $('#tip').style.display = 'none'; });
     } else {
       const banda = pw / g.meses.length, bw = Math.max(3, Math.min(24, (banda - 8) / 2)), y0 = y(0);
@@ -758,6 +781,8 @@ const ACOES = {
   agmodo: b => { ui.agModo = b.dataset.m; },
   agnav: b => { const n = Number(b.dataset.n); ui.agRef = n === 0 ? hoje() : ui.agModo === 'dia' ? addDias(ui.agRef, n) : ui.agModo === 'semana' ? addDias(ui.agRef, 7 * n) : addMeses(ui.agRef.slice(0, 8) + '01', n); },
   verdia: b => { ui.agRef = b.dataset.d; ui.agModo = 'dia'; },
+  gmet: b => { ui.gmet = b.dataset.m; },
+  gtodas: () => { ui.gTodas = !ui.gTodas; },
   semnav: b => { const n = Number(b.dataset.n); ui.semRef = n === 0 ? hoje() : addDias(ui.semRef, 7 * n); },
   fazerev: async b => { const e = db.eventos_calendario.find(x => x.id === b.dataset.id); if (!e) return;
     await inserir('treinos', {data: String(e.data).slice(0, 10), modalidade: modEvento(e) || 'outro', descricao: String(e.titulo).replace(/^[^\p{L}\p{N}]+/u, ''), duracao_min: durEvento(e.titulo), feito: true, google_id: e.google_id}); },
@@ -792,6 +817,9 @@ async function despachar(e) {
 }
 document.addEventListener('click', despachar);
 document.addEventListener('change', despachar);
+let saiuEm = 0;
+document.addEventListener('visibilitychange', () => { if (document.hidden) { saiuEm = Date.now(); return; }
+  if (saiuEm && Date.now() - saiuEm > 5 * 60000 && !$('#dlg').open && $('#nav').children.length) entrar(); });
 let rz; window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(desenharGraficos, 150); });
 
 /* ---------- arranque e sessão ---------- */
@@ -814,14 +842,14 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.se
 (async function arrancar() {
   $('#dataHoje').textContent = new Date().toLocaleDateString('pt-PT', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
   if (CONFIG.SUPABASE_URL && CONFIG.SUPABASE_KEY) {
-    $('#modo').textContent = 'Supabase';
+    $('#modo').textContent = 'v' + VERSAO;
     try {
       await carregarScript('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2');
       sb = window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_KEY);
       const {data, error} = await sb.auth.getSession(); if (error) throw error;
       if (data.session) entrar(); else ecraLogin();
     } catch (err) { sb = null; $('#app').innerHTML = `<div class="aviso"><b>Falha na ligação ao Supabase.</b> ${esc(msgErro(err))}</div>`; }
-  } else { $('#modo').textContent = 'Modo local'; entrar(); }
+  } else { $('#modo').textContent = 'Modo local · v' + VERSAO; entrar(); }
 })();
 </script>
 </body>
