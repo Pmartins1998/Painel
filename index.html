@@ -140,7 +140,7 @@ label.k{display:flex;gap:8px;align-items:center;margin:0 0 10px;font-size:13.5px
    Com os dois campos vazios, a app corre em modo local de demonstração:
    os dados ficam apenas neste navegador.
    ============================================================================ */
-const VERSAO = '9 · 20/11/2026';
+const VERSAO = '10 · 20/11/2026';
 const CONFIG = {
   SUPABASE_URL: 'https://rpdwbxqalunmhfsgsbao.supabase.co',
   SUPABASE_KEY: 'sb_publishable_bHLohWmZHPBXqdVH9fPKcQ_vz6-zpyB',
@@ -323,6 +323,21 @@ async function automatismos() {
   return feitos;
 }
 function sequencia() { let d = diaFechado(hoje()) ? hoje() : addDias(hoje(), -1), n = 0; while (diaFechado(d)) { n++; d = addDias(d, -1); } return n; }
+function leituraGarmin(k) {
+  const h = hoje(), m = GMET[k], todos = db.garmin_bem_estar.filter(x => String(x.data).slice(0, 10) <= h).sort((a, b) => String(a.data).localeCompare(String(b.data)));
+  const vals = todos.filter(x => String(x.data).slice(0, 10) >= addDias(h, -30) && String(x.data).slice(0, 10) < h).map(m[1]).filter(x => x != null), med = vals.length ? vals.reduce((a, c) => a + c, 0) / vals.length : null;
+  const ultimo = [...todos].reverse().find(x => m[1](x) != null), at = ultimo ? m[1](ultimo) : null, dif = at != null && med ? Math.round(100 * (at - med) / med) : null;
+  return tile(m[0], at == null ? '—' : m[2](at), at == null ? 'sem dados' : (String(ultimo.data).slice(0, 10) === h ? 'hoje' : fDM(ultimo.data)) + (dif == null ? '' : ' · ' + (dif > 0 ? '+' : '') + dif + ' % face à média'));
+}
+function cartaoPorFazer() {
+  const h = hoje(), p = pontuacaoHoje(), tr = sessoes(h, h).filter(t => !t.feito), ob = obrigJanela(0), hs = db.habitos.filter(x => x.ativo && x.tipo === 'bom' && !marcado(x.id, h)), venc = porReceber().filter(vencida), l = [];
+  tr.forEach(t => l.push(liTreino(t)));
+  ob.forEach(x => l.push(`<li><span class="t">${esc(x.o.descricao)} — ${eur(x.o.valor)}<br>${estadoVenc(x.data)}</span><button class="b mini" data-act="pagar" data-id="${esc(x.o.id)}">Marcar paga</button></li>`));
+  if (hs.length) l.push(`<li><span class="t">${hs.length} bom(ns) hábito(s) por marcar: ${esc(hs.map(x => x.nome).join(' · '))}</span></li>`);
+  if (venc.length) l.push(`<li><span class="t">${venc.length} fatura(s) vencida(s) por cobrar — ${eur(soma(venc, aberto))}</span><button class="b mini" data-act="verempresa" data-m="faturas">Ver</button></li>`);
+  if (!p.fechado) l.push(`<li><span class="t">Fechar o dia</span><button class="b mini pri" data-act="fechardia">Fechar</button></li>`);
+  return `<div class="cartao" style="margin-bottom:12px"><h3>Por fazer hoje${l.length ? ' (' + l.length + ')' : ''}</h3>${l.length ? '<ul class="lista">' + l.join('') + '</ul>' : '<div class="vazio">Tudo tratado por hoje.</div>'}</div>`;
+}
 function cartaoPontuacao() {
   const p = pontuacaoHoje(), h = hoje(), seq = sequencia(), dias = Array.from({length: 14}, (_, i) => addDias(h, i - 13));
   const med = (rot, v, sub) => `<div style="display:flex;justify-content:space-between;font-size:13px"><span>${rot}</span><span style="color:var(--ink2)">${v == null ? 'sem dados' : v + ' / 100'}</span></div><div class="medidor"><i style="width:${v || 0}%"></i></div><div class="nota" style="margin:-6px 0 10px">${sub}</div>`;
@@ -344,7 +359,7 @@ function metricaHabito(hb) {
 }
 
 /* ---------- peças de interface ---------- */
-const ui = {gmet: 'sono', semRef: hoje(), vista: 'hoje', agModo: 'semana', agRef: hoje(), mes: hoje().slice(0, 7), trRef: hoje(), projRec: false, fatTodas: false};
+const ui = {empSec: 'resumo', gmet: 'sono', semRef: hoje(), vista: 'hoje', agModo: 'semana', agRef: hoje(), mes: hoje().slice(0, 7), trRef: hoje(), projRec: false, fatTodas: false};
 let graficos = {};
 const tile = (rot, val, sub) => `<div class="cartao tile"><div class="rot">${esc(rot)}</div><div class="val">${esc(val)}</div><div class="sub">${sub || '&nbsp;'}</div></div>`;
 const bNovo = (t, txt, defs) => `<button class="b" data-act="novo" data-t="${t}" data-defs="${esc(JSON.stringify(defs || {}))}">+ ${esc(txt)}</button>`;
@@ -442,7 +457,7 @@ const VISTAS = {
     const procs = db.processos.filter(p => p.estado === 'em_curso').sort((a, b) => (a.prazo || '9').localeCompare(b.prazo || '9'));
     const m = h.slice(0, 7);
     return `<form class="cartao" id="rapido" style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap"><input id="rapTxt" aria-label="Registo rápido" placeholder="Registo rápido: 45 € combustível empresa" style="flex:1;min-width:200px;padding:8px;border:1px solid var(--eixo);border-radius:8px;background:var(--sup);color:var(--ink);font:inherit"><button class="b pri" type="submit">Registar</button></form>
-    ${cartaoPontuacao()}<div class="grelha">${tile('Caixa da empresa', eur(saldoContas('empresa')), db.contas.some(c => c.ambito === 'empresa') ? '' : 'sem contas registadas')}
+    ${cartaoPontuacao()}${cartaoPorFazer()}${db.garmin_bem_estar.length ? '<div class="grelha" style="margin-bottom:12px">' + ['sono', 'vfc', 'fc', 'passos'].map(leituraGarmin).join('') + '</div>' : ''}<div class="grelha">${tile('Caixa da empresa', eur(saldoContas('empresa')), db.contas.some(c => c.ambito === 'empresa') ? '' : 'sem contas registadas')}
       ${tile('Por receber de clientes', eur(soma(pr, aberto)), venc.length ? st('cri', '⚠ ' + venc.length + ' vencida(s): ' + eur(soma(venc, aberto))) : pr.length + ' fatura(s) em aberto')}
       ${tile('A pagar (comissões e fornecedores)', eur(totalAPagar()), dividasAbertas().length + ' comissão(ões) · ' + fornPorPagar().length + ' despesa(s)')}
       ${tile('Contas pessoais', eur(saldoContas('pessoal')), db.contas.some(c => c.ambito === 'pessoal') ? '' : 'sem contas registadas')}
@@ -468,7 +483,7 @@ const VISTAS = {
     const fats = (ui.fatTodas ? db.faturas : pr).slice().sort((a, b) => String(b.data_emissao).localeCompare(String(a.data_emissao)));
     const procs = db.processos.slice().sort((a, b) => (a.estado === 'concluido') - (b.estado === 'concluido') || (a.prazo || '9').localeCompare(b.prazo || '9'));
     const cnt = e => db.propostas.filter(p => p.estado === e), decid = cnt('adjudicada').length + cnt('recusada').length;
-    return `<div class="grelha">${tile('Faturado em ' + ano, eur(soma(db.faturas.filter(f => String(f.data_emissao).slice(0, 4) === ano), f => f.valor)), 'com IVA')}
+    const S = {resumo: `<div class="grelha">${tile('Faturado em ' + ano, eur(soma(db.faturas.filter(f => String(f.data_emissao).slice(0, 4) === ano), f => f.valor)), 'com IVA')}
       ${tile('Recebido em ' + ano, eur(recebidoEm(ano)))}
       ${tile('Por receber', eur(soma(pr, aberto)), venc.length ? st('cri', '⚠ vencido: ' + eur(soma(venc, aberto))) : pr.length + ' fatura(s)')}
       ${tile('A pagar', eur(totalAPagar()), 'comissões: ' + eur(soma(dividasAbertas(), divAberto)) + ' · fornecedores: ' + eur(soma(fornPorPagar(), m => m.valor)))}
@@ -476,24 +491,26 @@ const VISTAS = {
       <div class="cab"><h2>Importar dados</h2><label class="b" style="cursor:pointer">Importar JSON (GUITA ou CONTAS)<input type="file" id="impFich" accept=".json,application/json" hidden></label></div>` +
     secContas('empresa') + secProjecao('empresa') +
     cab('Faturação e recebimentos — últimos 12 meses') + `<div class="cartao"><div class="legenda"><span><i style="background:var(--s1)"></i>Faturado</span><span><i style="background:var(--s2)"></i>Recebido</span></div><div class="graf" data-graf="fat"></div>
-      <details><summary>Ver tabela</summary>${tabela([{l:'Mês'},{l:'Faturado',n:1},{l:'Recebido',n:1}], meses.map(m => [fMes(m.k), eur(m.a), eur(m.b)]), '')}</details></div>` +
-    cab(ui.fatTodas ? 'Faturas — todas' : 'Faturas por receber', `<button class="b" data-act="fattodas">${ui.fatTodas ? 'Ver só por receber' : 'Ver todas'}</button>` + bNovo('faturas', 'Fatura')) +
+      <details><summary>Ver tabela</summary>${tabela([{l:'Mês'},{l:'Faturado',n:1},{l:'Recebido',n:1}], meses.map(m => [fMes(m.k), eur(m.a), eur(m.b)]), '')}</details></div>`,
+    faturas: cab(ui.fatTodas ? 'Faturas — todas' : 'Faturas por receber', `<button class="b" data-act="fattodas">${ui.fatTodas ? 'Ver só por receber' : 'Ver todas'}</button>` + bNovo('faturas', 'Fatura')) +
       `<div class="cartao">${tabela([{l:'N.º'},{l:'Cliente'},{l:'Emissão'},{l:'Vencimento'},{l:'Valor',n:1},{l:'Em aberto',n:1},{l:'Estado'},{l:''}], fats.map(f => [esc(f.numero || '—'), esc(f.cliente) + (f.processo ? ' <span class="tag">' + esc(f.processo) + '</span>' : ''), fData(f.data_emissao), fData(f.data_vencimento), eur(f.valor), eur(aberto(f)),
         aberto(f) <= 0.004 ? st('bom', '✓ Recebida' + (f.data_recebimento ? ' em ' + fData(f.data_recebimento) : '')) : f.data_vencimento ? estadoVenc(f.data_vencimento) : st('', 'Sem vencimento'),
-        (aberto(f) <= 0.004 ? '' : `<button class="b mini" data-act="receber" data-id="${esc(f.id)}">Marcar recebida</button> `) + bEdit('faturas', f.id)]), ui.fatTodas ? 'Sem faturas registadas.' : 'Sem faturas por receber.')}</div>` +
-    cab('A pagar — comissões', bNovo('dividas', 'Valor a pagar')) + `<div class="cartao">${tabela([{l:'Ref.'},{l:'Entidade'},{l:'Descrição'},{l:'Data'},{l:'Valor',n:1},{l:'Em aberto',n:1},{l:''}],
+        (aberto(f) <= 0.004 ? '' : `<button class="b mini" data-act="receber" data-id="${esc(f.id)}">Marcar recebida</button> `) + bEdit('faturas', f.id)]), ui.fatTodas ? 'Sem faturas registadas.' : 'Sem faturas por receber.')}</div>` + secMovimentos('empresa'),
+    pagar: cab('A pagar — comissões', bNovo('dividas', 'Valor a pagar')) + `<div class="cartao">${tabela([{l:'Ref.'},{l:'Entidade'},{l:'Descrição'},{l:'Data'},{l:'Valor',n:1},{l:'Em aberto',n:1},{l:''}],
       dividasAbertas().sort((a, b) => String(a.entidade).localeCompare(String(b.entidade)) || String(a.data).localeCompare(String(b.data))).map(d => [esc(d.numero || '—'), esc(d.entidade) + (d.processo ? ' <span class="tag">' + esc(d.processo) + '</span>' : ''), esc(d.descricao || '—'), fData(d.data), eur(d.valor), eur(divAberto(d)),
         `<button class="b mini" data-act="pagardiv" data-id="${esc(d.id)}">Marcar paga</button> ` + bEdit('dividas', d.id)]), 'Sem comissões por pagar.')}
       ${db.dividas.length > dividasAbertas().length ? `<p class="nota">${db.dividas.length - dividasAbertas().length} valor(es) já pago(s) não mostrado(s).</p>` : ''}</div>` +
     cab('A pagar — fornecedores') + `<div class="cartao">${tabela([{l:'Documento'},{l:'Entidade'},{l:'Categoria'},{l:'Data'},{l:'Valor',n:1},{l:''}],
-      fornPorPagar().map(m => [esc(m.numero || '—'), esc(m.entidade || m.descricao), esc(m.categoria || '—'), fData(m.data), eur(m.valor), `<button class="b mini" data-act="pagarmov" data-id="${esc(m.id)}">Marcar paga</button> ` + bEdit('movimentos', m.id)]), 'Sem despesas por pagar.')}</div>` +
-    secAnalise() + secMovimentos('empresa') +
-    cab('Processos', bNovo('processos', 'Processo')) + `<div class="cartao">${tabela([{l:'Ref.'},{l:'Designação'},{l:'Cliente'},{l:'Tipo'},{l:'Fase'},{l:'Prazo'},{l:'Estado'},{l:''}],
+      fornPorPagar().map(m => [esc(m.numero || '—'), esc(m.entidade || m.descricao), esc(m.categoria || '—'), fData(m.data), eur(m.valor), `<button class="b mini" data-act="pagarmov" data-id="${esc(m.id)}">Marcar paga</button> ` + bEdit('movimentos', m.id)]), 'Sem despesas por pagar.')}</div>`,
+    analise: secAnalise(),
+    processos: cab('Processos', bNovo('processos', 'Processo')) + `<div class="cartao">${tabela([{l:'Ref.'},{l:'Designação'},{l:'Cliente'},{l:'Tipo'},{l:'Fase'},{l:'Prazo'},{l:'Estado'},{l:''}],
       procs.map(p => [esc(p.referencia || '—'), esc(p.nome), esc(p.cliente || '—'), esc(p.tipo || '—'), esc(p.fase || '—'), p.prazo ? fData(p.prazo) + (p.estado === 'em_curso' ? '<br>' + estadoVenc(p.prazo) : '') : '—', lab(EST_PROC, p.estado), bEdit('processos', p.id)]), 'Sem processos registados.')}</div>` +
     cab('Propostas', bNovo('propostas', 'Proposta')) + `<div class="grelha">${tile('Pendentes', String(cnt('pendente').length), eur(soma(cnt('pendente'), p => p.valor)))}${tile('Adjudicadas', String(cnt('adjudicada').length), eur(soma(cnt('adjudicada'), p => p.valor)))}
       ${tile('Recusadas', String(cnt('recusada').length))}${tile('Taxa de adjudicação', decid ? Math.round(100 * cnt('adjudicada').length / decid) + ' %' : '—', decid ? 'sobre ' + decid + ' proposta(s) decidida(s)' : 'sem propostas decididas')}</div>
       <div class="cartao" style="margin-top:12px">${tabela([{l:'Ref.'},{l:'Cliente'},{l:'Descrição'},{l:'Envio'},{l:'Valor',n:1},{l:'Estado'},{l:''}], db.propostas.slice().sort((a, b) => String(b.data_envio).localeCompare(String(a.data_envio)))
-        .map(p => [esc(p.referencia || '—'), esc(p.cliente), esc(p.descricao || '—'), fData(p.data_envio), p.valor != null ? eur(p.valor) : '—', lab(EST_PROP, p.estado), bEdit('propostas', p.id)]), 'Sem propostas registadas.')}</div>`;
+        .map(p => [esc(p.referencia || '—'), esc(p.cliente), esc(p.descricao || '—'), fData(p.data_envio), p.valor != null ? eur(p.valor) : '—', lab(EST_PROP, p.estado), bEdit('propostas', p.id)]), 'Sem propostas registadas.')}</div>`};
+    const SECS = [['resumo', 'Resumo'], ['faturas', 'Faturas e despesas'], ['pagar', 'A pagar'], ['analise', 'Análise'], ['processos', 'Processos e propostas']];
+    return `<div class="scroll" style="margin-bottom:14px"><span class="seg" style="white-space:nowrap">${SECS.map(([k, l]) => `<button data-act="empsec" data-m="${k}" aria-pressed="${ui.empSec === k}">${l}</button>`).join('')}</span></div>` + S[ui.empSec].replace('class="cab"', 'class="cab" style="margin-top:0"');
   }],
   financas: ['Finanças', () => secContas('pessoal').replace('class="cab"', 'class="cab" style="margin-top:0"') + secProjecao('pessoal') + secMovimentos('pessoal')],
   agenda: ['Agenda', () => {
@@ -781,6 +798,8 @@ const ACOES = {
   agmodo: b => { ui.agModo = b.dataset.m; },
   agnav: b => { const n = Number(b.dataset.n); ui.agRef = n === 0 ? hoje() : ui.agModo === 'dia' ? addDias(ui.agRef, n) : ui.agModo === 'semana' ? addDias(ui.agRef, 7 * n) : addMeses(ui.agRef.slice(0, 8) + '01', n); },
   verdia: b => { ui.agRef = b.dataset.d; ui.agModo = 'dia'; },
+  empsec: b => { ui.empSec = b.dataset.m; },
+  verempresa: b => { ui.vista = 'empresa'; ui.empSec = b.dataset.m; window.scrollTo(0, 0); },
   gmet: b => { ui.gmet = b.dataset.m; },
   gtodas: () => { ui.gTodas = !ui.gTodas; },
   semnav: b => { const n = Number(b.dataset.n); ui.semRef = n === 0 ? hoje() : addDias(ui.semRef, 7 * n); },
