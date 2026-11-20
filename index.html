@@ -62,6 +62,7 @@ tr:last-child td{border-bottom:0}
 .lista .t{flex:1;min-width:0}
 .item{all:unset;cursor:pointer;display:block;width:100%}
 .item:hover,.item:focus-visible{text-decoration:underline}
+.edit1{text-decoration:underline;text-decoration-color:var(--eixo);text-underline-offset:3px}
 .seg{display:inline-flex;border:1px solid var(--lin);border-radius:8px;overflow:hidden}
 .seg button{border:0;background:var(--sup);color:var(--ink2);padding:6px 12px;cursor:pointer;font-size:13px}
 .seg button[aria-pressed=true]{background:var(--pri);color:var(--pri-ink)}
@@ -140,7 +141,7 @@ label.k{display:flex;gap:8px;align-items:center;margin:0 0 10px;font-size:13.5px
    Com os dois campos vazios, a app corre em modo local de demonstração:
    os dados ficam apenas neste navegador.
    ============================================================================ */
-const VERSAO = '10 · 20/11/2026';
+const VERSAO = '11 · 20/11/2026';
 const CONFIG = {
   SUPABASE_URL: 'https://rpdwbxqalunmhfsgsbao.supabase.co',
   SUPABASE_KEY: 'sb_publishable_bHLohWmZHPBXqdVH9fPKcQ_vz6-zpyB',
@@ -332,7 +333,7 @@ function leituraGarmin(k) {
 function cartaoPorFazer() {
   const h = hoje(), p = pontuacaoHoje(), tr = sessoes(h, h).filter(t => !t.feito), ob = obrigJanela(0), hs = db.habitos.filter(x => x.ativo && x.tipo === 'bom' && !marcado(x.id, h)), venc = porReceber().filter(vencida), l = [];
   tr.forEach(t => l.push(liTreino(t)));
-  ob.forEach(x => l.push(`<li><span class="t">${esc(x.o.descricao)} — ${eur(x.o.valor)}<br>${estadoVenc(x.data)}</span><button class="b mini" data-act="pagar" data-id="${esc(x.o.id)}">Marcar paga</button></li>`));
+  ob.forEach(x => l.push(`<li><span class="t"><button class="item edit1" data-act="editar" data-t="obrigacoes" data-id="${esc(x.o.id)}">${esc(x.o.descricao)} — ${eur(x.o.valor)}</button><br>${estadoVenc(x.data)}</span><button class="b mini" data-act="pagar" data-id="${esc(x.o.id)}">Marcar paga</button></li>`));
   if (hs.length) l.push(`<li><span class="t">${hs.length} bom(ns) hábito(s) por marcar: ${esc(hs.map(x => x.nome).join(' · '))}</span></li>`);
   if (venc.length) l.push(`<li><span class="t">${venc.length} fatura(s) vencida(s) por cobrar — ${eur(soma(venc, aberto))}</span><button class="b mini" data-act="verempresa" data-m="faturas">Ver</button></li>`);
   if (!p.fechado) l.push(`<li><span class="t">Fechar o dia</span><button class="b mini pri" data-act="fechardia">Fechar</button></li>`);
@@ -366,7 +367,8 @@ const bNovo = (t, txt, defs) => `<button class="b" data-act="novo" data-t="${t}"
 const bEdit = (t, id) => `<button class="b mini" data-act="editar" data-t="${t}" data-id="${esc(id)}">Editar</button>`;
 const cab = (titulo, extra) => `<div class="cab"><h2>${esc(titulo)}</h2>${extra || ''}</div>`;
 const tabela = (cols, linhas, vazio) => linhas.length ? `<div class="scroll"><table><thead><tr>${cols.map(c => `<th${c.n ? ' class="n"' : ''}>${esc(c.l)}</th>`).join('')}</tr></thead><tbody>${
-  linhas.map(l => '<tr>' + l.map((v, i) => `<td${cols[i].n ? ' class="n"' : ''}>${v}</td>`).join('') + '</tr>').join('')}</tbody></table></div>` : `<div class="vazio">${esc(vazio)}</div>`;
+  linhas.map(l => { const m = /data-act="editar" data-t="([^"]+)" data-id="([^"]+)"/.exec(String(l[l.length - 1] || ''));
+    return '<tr>' + l.map((v, i) => `<td${cols[i].n ? ' class="n"' : ''}>${m && i === 0 ? `<button class="item edit1" data-act="editar" data-t="${m[1]}" data-id="${m[2]}">${v}</button>` : v}</td>`).join('') + '</tr>'; }).join('')}</tbody></table></div>` : `<div class="vazio">${esc(vazio)}</div>`;
 const st = (cls, txt) => `<span class="st ${cls}">${esc(txt)}</span>`;
 function estadoVenc(d) {
   const n = difDias(hoje(), d);
@@ -464,7 +466,7 @@ const VISTAS = {
       ${tile('Obrigações nos próximos 30 dias', eur(soma(ob30, x => x.o.valor)), atras.length ? st('cri', '⚠ ' + atras.length + ' em atraso') : ob30.length + ' pagamento(s)')}</div>
     <div class="col2" style="margin-top:12px">
       <div class="cartao"><h3>Compromissos de hoje</h3>${its.length ? '<ul class="lista">' + its.map(itemLi).join('') + '</ul>' : '<div class="vazio">Sem compromissos para hoje.</div>'}</div>
-      <div class="cartao"><h3>Obrigações — próximos 7 dias</h3>${ob7.length ? '<ul class="lista">' + ob7.map(x => `<li><span class="t">${esc(x.o.descricao)} <span class="tag">${lab(AMBITO, x.o.ambito)}</span><br>${estadoVenc(x.data)}</span><span>${eur(x.o.valor)}</span></li>`).join('') + '</ul>' : '<div class="vazio">Nada a vencer nos próximos 7 dias.</div>'}</div>
+      <div class="cartao"><h3>Obrigações — próximos 7 dias</h3>${ob7.length ? '<ul class="lista">' + ob7.map(x => `<li><span class="t"><button class="item edit1" style="display:inline;width:auto" data-act="editar" data-t="obrigacoes" data-id="${esc(x.o.id)}">${esc(x.o.descricao)}</button> <span class="tag">${lab(AMBITO, x.o.ambito)}</span><br>${estadoVenc(x.data)}</span><span>${eur(x.o.valor)}</span></li>`).join('') + '</ul>' : '<div class="vazio">Nada a vencer nos próximos 7 dias.</div>'}</div>
       <div class="cartao"><h3>Treino — esta semana</h3><div class="sub" style="color:var(--ink2);font-size:13px;margin-bottom:6px">${trSem.filter(t => t.feito).length} de ${trSem.length} sessões realizadas</div>
         ${trSem.filter(t => t.data === h).length ? '<ul class="lista">' + trSem.filter(t => t.data === h).map(liTreino).join('') + '</ul>' : '<div class="vazio">Sem sessões marcadas para hoje.</div>'}</div>
       <div class="cartao"><h3>Hábitos de hoje</h3>${db.habitos.filter(x => x.ativo).length ? '<div class="chips">' + db.habitos.filter(x => x.ativo).map(hb => { const on = !!marcado(hb.id, h);
@@ -536,7 +538,7 @@ const VISTAS = {
     return `<div class="grelha">${tile('Em atraso', eur(soma(atras, x => x.o.valor)), atras.length ? st('cri', '⚠ ' + atras.length + ' pagamento(s)') : 'nenhum')}
       ${tile('Próximos 30 dias — empresa', eur(soma(ob30.filter(x => x.o.ambito === 'empresa'), x => x.o.valor)))}${tile('Próximos 30 dias — pessoal', eur(soma(ob30.filter(x => x.o.ambito === 'pessoal'), x => x.o.valor)))}</div>` +
       cab('Contas a pagar', bNovo('obrigacoes', 'Obrigação')) + `<div class="cartao">${tabela(cols, at.map(lin), 'Sem obrigações registadas.')}
-      <p class="nota">"Marcar paga" regista a despesa fixa nos movimentos com a data de hoje e avança o vencimento para o período seguinte (as obrigações únicas ficam inativas).</p>
+      <p class="nota">Toque na descrição para editar ou eliminar uma obrigação. "Marcar paga" regista a despesa fixa nos movimentos com a data de hoje e avança o vencimento para o período seguinte (as obrigações únicas ficam inativas).</p>
       ${inat.length ? `<details><summary>Inativas (${inat.length})</summary>${tabela(cols, inat.map(lin), '')}</details>` : ''}</div>`;
   }],
   apartamento: ['Apartamento', () => {
