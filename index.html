@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#52514e">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icone.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icone-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>Painel pessoal</title>
+<style>
+:root{color-scheme:light;--bg:#f1f1ef;--sup:#fcfcfb;--sup2:#f4f4f2;--ink:#0b0b0b;--ink2:#52514e;--mut:#898781;--lin:#e1e0d9;--eixo:#c3c2b7;
+  --s1:#2a78d6;--s2:#eb6834;--bom:#006300;--avi:#8a5a00;--cri:#b42f2f;--pri:#2f2f2d;--pri-ink:#fff}
+@media (prefers-color-scheme:dark){:root{color-scheme:dark;--bg:#0d0d0d;--sup:#1a1a19;--sup2:#222220;--ink:#f0efec;--ink2:#c3c2b7;--mut:#898781;--lin:#2c2c2a;--eixo:#383835;
+  --s1:#3987e5;--s2:#d95926;--bom:#0ca30c;--avi:#fab219;--cri:#e66767;--pri:#e4e3df;--pri-ink:#0d0d0d}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif}
+header{display:flex;align-items:center;gap:12px;padding:14px 16px 6px;max-width:1120px;margin:0 auto;flex-wrap:wrap}
+header h1{font-size:18px;margin:0;font-weight:650}
+header .data{color:var(--ink2);font-size:13px}
+header .esp{flex:1}
+.modo{font-size:12px;color:var(--ink2);border:1px solid var(--lin);border-radius:999px;padding:2px 10px;background:var(--sup)}
+nav{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--lin)}
+nav .in{display:flex;gap:2px;overflow-x:auto;max-width:1120px;margin:0 auto;padding:6px 12px}
+nav button{border:0;background:none;color:var(--ink2);padding:8px 12px;border-radius:8px;font:inherit;white-space:nowrap;cursor:pointer}
+nav button[aria-current=page]{background:var(--sup);color:var(--ink);font-weight:600;box-shadow:inset 0 0 0 1px var(--lin)}
+main{max-width:1120px;margin:0 auto;padding:16px 16px 64px}
+.aviso{background:var(--sup);border:1px solid var(--lin);border-left:3px solid var(--mut);border-radius:8px;padding:10px 12px;margin:0 0 16px;color:var(--ink2);font-size:13px}
+h2{font-size:16px;margin:26px 0 10px;font-weight:650}
+h2:first-child{margin-top:0}
+h3{font-size:14px;margin:0 0 8px;font-weight:600}
+.cab{display:flex;align-items:center;gap:8px;margin:26px 0 10px;flex-wrap:wrap}
+.cab h2{margin:0;flex:1}
+.grelha{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(160px,1fr))}
+.col2{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+.cartao{background:var(--sup);border:1px solid var(--lin);border-radius:10px;padding:14px}
+.tile .rot{color:var(--ink2);font-size:12.5px}
+.tile .val{font-size:24px;font-weight:650;margin:2px 0;letter-spacing:-.01em}
+.tile .sub{color:var(--mut);font-size:12.5px}
+button,.btn{font:inherit}
+.b{border:1px solid var(--lin);background:var(--sup);color:var(--ink);border-radius:8px;padding:6px 10px;cursor:pointer;font-size:13px}
+.b:hover{background:var(--sup2)}
+.b.pri{background:var(--pri);color:var(--pri-ink);border-color:var(--pri)}
+.b.mini{padding:3px 8px;font-size:12.5px}
+.b.perigo{color:var(--cri)}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+th{text-align:left;color:var(--ink2);font-weight:550;font-size:12.5px;padding:6px 8px;border-bottom:1px solid var(--eixo);white-space:nowrap}
+td{padding:7px 8px;border-bottom:1px solid var(--lin);vertical-align:middle}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+tr:last-child td{border-bottom:0}
+.vazio{color:var(--mut);font-size:13.5px;padding:6px 0}
+.tag{display:inline-block;font-size:11.5px;color:var(--ink2);border:1px solid var(--lin);border-radius:999px;padding:0 8px;background:var(--sup2);white-space:nowrap}
+.st{font-size:12.5px;white-space:nowrap}
+.st.bom{color:var(--bom)}.st.avi{color:var(--avi)}.st.cri{color:var(--cri);font-weight:600}
+.lista{list-style:none;margin:0;padding:0}
+.lista li{display:flex;gap:8px;align-items:center;padding:7px 0;border-bottom:1px solid var(--lin);font-size:13.5px}
+.lista li:last-child{border-bottom:0}
+.lista .h{color:var(--ink2);font-variant-numeric:tabular-nums;min-width:42px}
+.lista .t{flex:1;min-width:0}
+.item{all:unset;cursor:pointer;display:block;width:100%}
+.item:hover,.item:focus-visible{text-decoration:underline}
+.seg{display:inline-flex;border:1px solid var(--lin);border-radius:8px;overflow:hidden}
+.seg button{border:0;background:var(--sup);color:var(--ink2);padding:6px 12px;cursor:pointer;font-size:13px}
+.seg button[aria-pressed=true]{background:var(--pri);color:var(--pri-ink)}
+.semana{display:grid;grid-template-columns:repeat(7,1fr);gap:8px}
+.dia{background:var(--sup);border:1px solid var(--lin);border-radius:10px;padding:10px;min-height:110px}
+.dia.hoje{box-shadow:inset 0 0 0 2px var(--mut)}
+.dia .dt{font-size:12.5px;color:var(--ink2);margin-bottom:6px;display:flex;justify-content:space-between}
+.dia .ev{font-size:12.5px;padding:3px 0;border-top:1px solid var(--lin)}
+.mes{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.mes .cd{font-size:12px;color:var(--mut);text-align:center;padding:2px}
+.mes button{all:unset;cursor:pointer;background:var(--sup);border:1px solid var(--lin);border-radius:8px;padding:6px;min-height:74px;font-size:12px;display:block;overflow:hidden}
+.mes button.fora{opacity:.45}
+.mes button.hoje{box-shadow:inset 0 0 0 2px var(--mut)}
+.mes .num{font-weight:600;font-size:12.5px}
+.mes .ev{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink2)}
+.mes .cnt{display:none;color:var(--ink2)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:1px solid var(--lin);background:var(--sup);color:var(--ink);border-radius:999px;padding:6px 12px;cursor:pointer;font-size:13.5px}
+.chip[aria-pressed=true]{background:var(--pri);color:var(--pri-ink);border-color:var(--pri)}
+.hb{border:1px solid var(--lin);background:var(--sup);color:var(--ink);border-radius:8px;width:34px;height:30px;cursor:pointer;font-size:14px}
+.hb[aria-pressed=true]{background:var(--pri);color:var(--pri-ink);border-color:var(--pri)}
+.legenda{display:flex;gap:14px;font-size:12.5px;color:var(--ink2);margin:0 0 6px}
+.legenda i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+.graf{width:100%;position:relative}
+.graf svg{display:block;width:100%;touch-action:pan-y}
+.nota{color:var(--mut);font-size:12.5px;margin:8px 0 0}
+details{margin-top:8px}
+summary{cursor:pointer;color:var(--ink2);font-size:13px}
+#tip{position:fixed;z-index:20;pointer-events:none;background:var(--sup);border:1px solid var(--eixo);border-radius:8px;padding:8px 10px;font-size:12.5px;box-shadow:0 4px 14px rgba(0,0,0,.14);display:none;max-width:260px}
+#tip b{display:block;font-size:14px}
+#tip .k{display:inline-block;width:12px;height:2px;margin-right:6px;vertical-align:middle}
+#tip div{color:var(--ink2)}
+#toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:var(--pri);color:var(--pri-ink);padding:10px 14px;border-radius:8px;font-size:13.5px;display:none;z-index:30;max-width:90vw}
+dialog{border:1px solid var(--lin);border-radius:12px;background:var(--sup);color:var(--ink);padding:18px;width:min(460px,94vw)}
+dialog::backdrop{background:rgba(0,0,0,.4)}
+dialog h2{margin:0 0 12px}
+label.c{display:block;margin:0 0 10px;font-size:12.5px;color:var(--ink2)}
+label.c input,label.c select{display:block;width:100%;margin-top:3px;padding:8px;border:1px solid var(--eixo);border-radius:8px;background:var(--sup);color:var(--ink);font:inherit}
+label.k{display:flex;gap:8px;align-items:center;margin:0 0 10px;font-size:13.5px}
+.acoes{display:flex;gap:8px;align-items:center;margin-top:14px}
+.acoes .esp{flex:1}
+.erro{color:var(--cri);font-size:13px;min-height:1em}
+.login{max-width:360px;margin:8vh auto}
+@media (max-width:820px){
+  .semana{grid-template-columns:1fr}.dia{min-height:0}
+  .mes button{min-height:50px;padding:4px;text-align:center}.mes .ev{display:none}.mes .cnt{display:block}
+  .tile .val{font-size:21px}
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>Painel pessoal</h1><span class="data" id="dataHoje"></span><span class="esp"></span>
+  <span class="modo" id="modo"></span><button class="b mini" id="sair" hidden data-act="sair">Terminar sessão</button>
+</header>
+<nav><div class="in" id="nav"></div></nav>
+<main id="app"></main>
+<dialog id="dlg"></dialog>
+<div id="tip"></div>
+<div id="toast" role="status"></div>
+
+<script>
+/* ============================================================================
+   CONFIGURAÇÃO
+   Preencher com os dados do projeto Supabase (Project Settings > API):
+   o URL do projeto e a chave pública ("publishable" ou "anon").
+   NUNCA colocar aqui a chave "secret" / "service_role".
+   Com os dois campos vazios, a app corre em modo local de demonstração:
+   os dados ficam apenas neste navegador.
+   ============================================================================ */
+const CONFIG = {
+  SUPABASE_URL: 'https://rpdwbxqalunmhfsgsbao.supabase.co',
+  SUPABASE_KEY: 'sb_publishable_bHLohWmZHPBXqdVH9fPKcQ_vz6-zpyB',
+  LINK_APP_RENDAS: 'https://claude.ai/artifact/SgTV3iyz83YPzAfeUeKFXb'  // ligação opcional mostrada no separador Apartamento
+};
+
+/* ---------- utilitários ---------- */
+const $ = s => document.querySelector(s);
+const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const num = v => Number(v) || 0;
+const soma = (a, f) => a.reduce((s, x) => s + num(f(x)), 0);
+const eur = v => new Intl.NumberFormat('pt-PT', {style:'currency', currency:'EUR'}).format(num(v));
+const pad = n => String(n).padStart(2, '0');
+const iso = d => d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+const pd = s => { const [y, m, d] = String(s).slice(0, 10).split('-').map(Number); return new Date(y, m - 1, d); };
+const hoje = () => iso(new Date());
+const addDias = (s, n) => { const d = pd(s); d.setDate(d.getDate() + n); return iso(d); };
+const addMeses = (s, n) => { const d = pd(s), dia = d.getDate(); d.setDate(1); d.setMonth(d.getMonth() + n);
+  d.setDate(Math.min(dia, new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate())); return iso(d); };
+const difDias = (a, b) => Math.round((pd(b) - pd(a)) / 864e5);
+const segunda = s => addDias(s, -((pd(s).getDay() + 6) % 7));
+const fData = s => s ? String(s).slice(8, 10) + '/' + String(s).slice(5, 7) + '/' + String(s).slice(0, 4) : '—';
+const fDM = s => String(s).slice(8, 10) + '/' + String(s).slice(5, 7);
+const MESES = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+const DIAS = ['seg','ter','qua','qui','sex','sáb','dom'];
+const fMes = k => MESES[Number(k.slice(5, 7)) - 1] + ' ' + k.slice(0, 4);
+const uuid = () => (crypto.randomUUID ? crypto.randomUUID() : 'l-' + Date.now().toString(36) + Math.random().toString(36).slice(2));
+const lab = (lista, v) => (lista.find(o => o[0] === v) || [0, v ?? ''])[1];
+
+/* ---------- listas de valores ---------- */
+const AMBITO = [['empresa','Empresa'],['pessoal','Pessoal']];
+const TIPO_MOV = [['despesa','Despesa'],['receita','Receita']];
+const NATUREZA = [['variavel','Variável'],['fixa','Fixa']];
+const PERIOD = [['mensal','Mensal'],['trimestral','Trimestral'],['semestral','Semestral'],['anual','Anual'],['unica','Única']];
+const PASSO = {mensal:1, trimestral:3, semestral:6, anual:12};
+const RECOR = [['nenhuma','Não se repete'],['diaria','Diária'],['semanal','Semanal'],['mensal','Mensal']];
+const MODAL = [['natacao','Natação'],['ciclismo','Ciclismo'],['corrida','Corrida'],['forca','Força'],['mobilidade','Mobilidade'],['outro','Outro']];
+const EST_PROC = [['em_curso','Em curso'],['suspenso','Suspenso'],['concluido','Concluído']];
+const EST_PROP = [['pendente','Pendente'],['adjudicada','Adjudicada'],['recusada','Recusada']];
+const TIPO_PROC = ['Relatório de patologias','Caderno de encargos','Mapa de trabalhos e quantidades','Fiscalização','Parecer técnico','Peritagem','Licenciamento','Outro'].map(x => [x, x]);
+const TIPO_APT = [['renda','Renda'],['agua','Água'],['luz','Luz']];
+const EST_APT = [['pendente','Pendente'],['pago','Pago']];
+const TIPO_HAB = [['bom','Bom hábito'],['mau','Mau hábito']];
+
+/* ---------- formulários (um por tabela) ---------- */
+const FORMS = {
+  contas: {titulo:'Conta', campos:[{k:'ambito',l:'Âmbito',t:'select',o:AMBITO},{k:'nome',l:'Nome da conta',t:'text',req:1},{k:'saldo',l:'Saldo (€)',t:'money',req:1},{k:'atualizado_em',l:'Saldo à data de',t:'date',def:'hoje'}]},
+  movimentos: {titulo:'Movimento', campos:[{k:'ambito',l:'Âmbito',t:'select',o:AMBITO},{k:'tipo',l:'Tipo',t:'select',o:TIPO_MOV},{k:'natureza',l:'Natureza',t:'select',o:NATUREZA},{k:'descricao',l:'Descrição',t:'text',req:1},{k:'categoria',l:'Categoria',t:'text'},{k:'valor',l:'Valor (€)',t:'money',req:1},{k:'data',l:'Data',t:'date',req:1,def:'hoje'},{k:'entidade',l:'Entidade',t:'text'},{k:'pago',l:'Pago',t:'check',def:true},{k:'data_pagamento',l:'Data de pagamento',t:'date'}]},
+  obrigacoes: {titulo:'Obrigação', campos:[{k:'ambito',l:'Âmbito',t:'select',o:AMBITO},{k:'descricao',l:'Descrição',t:'text',req:1},{k:'valor',l:'Valor (€)',t:'money',req:1},{k:'periodicidade',l:'Periodicidade',t:'select',o:PERIOD},{k:'proximo_vencimento',l:'Próximo vencimento',t:'date',req:1},{k:'ativo',l:'Ativa',t:'check',def:true}]},
+  faturas: {titulo:'Fatura', campos:[{k:'numero',l:'N.º da fatura',t:'text'},{k:'cliente',l:'Cliente',t:'text',req:1},{k:'descricao',l:'Descrição',t:'text'},{k:'valor',l:'Valor (€)',t:'money',req:1},{k:'data_emissao',l:'Data de emissão',t:'date',req:1,def:'hoje'},{k:'data_vencimento',l:'Data de vencimento',t:'date'},{k:'data_recebimento',l:'Data de recebimento (vazio = por receber)',t:'date'},{k:'valor_recebido',l:'Valor já recebido (€) — vazio = total, se houver data de recebimento',t:'money'}]},
+  processos: {titulo:'Processo', campos:[{k:'referencia',l:'Referência',t:'text'},{k:'nome',l:'Designação',t:'text',req:1},{k:'cliente',l:'Cliente',t:'text'},{k:'tipo',l:'Tipo de serviço',t:'select',o:TIPO_PROC},{k:'fase',l:'Fase atual',t:'text'},{k:'prazo',l:'Prazo',t:'date'},{k:'estado',l:'Estado',t:'select',o:EST_PROC}]},
+  propostas: {titulo:'Proposta', campos:[{k:'referencia',l:'Referência',t:'text'},{k:'cliente',l:'Cliente',t:'text',req:1},{k:'descricao',l:'Descrição',t:'text'},{k:'valor',l:'Valor (€)',t:'money'},{k:'data_envio',l:'Data de envio',t:'date',req:1,def:'hoje'},{k:'estado',l:'Estado',t:'select',o:EST_PROP}]},
+  compromissos: {titulo:'Compromisso', campos:[{k:'titulo',l:'Título',t:'text',req:1},{k:'data',l:'Data',t:'date',req:1,def:'hoje'},{k:'hora',l:'Hora (vazio = dia inteiro)',t:'time'},{k:'recorrencia',l:'Repetição',t:'select',o:RECOR},{k:'notas',l:'Notas',t:'text'}]},
+  apartamento_registos: {titulo:'Apartamento', campos:[{k:'mes',l:'Mês (AAAA-MM)',t:'month',req:1},{k:'tipo',l:'Tipo',t:'select',o:TIPO_APT},{k:'valor',l:'Valor (€)',t:'money'},{k:'estado',l:'Estado',t:'select',o:EST_APT},{k:'data_pagamento',l:'Data de pagamento',t:'date'}]},
+  treinos: {titulo:'Sessão de treino', campos:[{k:'data',l:'Data',t:'date',req:1,def:'hoje'},{k:'modalidade',l:'Modalidade',t:'select',o:MODAL},{k:'descricao',l:'Descrição',t:'text'},{k:'duracao_min',l:'Duração (min)',t:'int'},{k:'distancia_km',l:'Distância (km)',t:'money'},{k:'feito',l:'Realizada',t:'check'}]},
+  dividas: {titulo:'Valor a pagar', campos:[{k:'tipo',l:'Tipo',t:'select',o:[['comissao','Comissão'],['outra','Outra']]},{k:'numero',l:'N.º / referência',t:'text'},{k:'entidade',l:'Entidade',t:'text',req:1},{k:'descricao',l:'Descrição',t:'text'},{k:'processo',l:'Processo',t:'text'},{k:'valor',l:'Valor (€)',t:'money',req:1},{k:'valor_pago',l:'Valor já pago (€)',t:'money',zero:1},{k:'data',l:'Data',t:'date',req:1,def:'hoje'}]},
+  habitos: {titulo:'Hábito', campos:[{k:'nome',l:'Nome',t:'text',req:1},{k:'tipo',l:'Tipo',t:'select',o:TIPO_HAB},{k:'ativo',l:'Ativo',t:'check',def:true}]}
+};
+const TABELAS = [...Object.keys(FORMS), 'habitos_registos', 'eventos_calendario'];
+
+/* ---------- armazenamento: Supabase ou local ---------- */
+const db = {}; TABELAS.forEach(t => db[t] = []);
+let sb = null, memoriaApenas = false;
+const CHAVE_LOCAL = 'painel-pessoal-v1';
+function guardarLocal() { try { localStorage.setItem(CHAVE_LOCAL, JSON.stringify(db)); } catch (e) { memoriaApenas = true; } }
+async function carregarTudo() {
+  if (sb) {
+    const res = await Promise.all(TABELAS.map(t => sb.from(t).select('*')));
+    res.forEach((r, i) => { if (r.error) throw r.error; db[TABELAS[i]] = r.data || []; });
+  } else {
+    try { const d = JSON.parse(localStorage.getItem(CHAVE_LOCAL) || '{}'); TABELAS.forEach(t => db[t] = Array.isArray(d[t]) ? d[t] : []); }
+    catch (e) { memoriaApenas = true; }
+  }
+}
+async function inserir(t, linha) {
+  if (sb) { const {data, error} = await sb.from(t).insert(linha).select().single(); if (error) throw error; db[t].push(data); return data; }
+  if (t === 'apartamento_registos' && db[t].some(r => r.mes === linha.mes && r.tipo === linha.tipo)) throw new Error('Já existe um registo para esse mês e tipo.');
+  const l = {id: uuid(), created_at: new Date().toISOString(), ...linha}; db[t].push(l); guardarLocal(); return l;
+}
+async function atualizar(t, id, dados) {
+  const i = db[t].findIndex(r => r.id === id); if (i < 0) return;
+  if (sb) { const {data, error} = await sb.from(t).update(dados).eq('id', id).select().single(); if (error) throw error; db[t][i] = data; return data; }
+  db[t][i] = {...db[t][i], ...dados}; guardarLocal(); return db[t][i];
+}
+async function eliminar(t, id) {
+  if (sb) { const {error} = await sb.from(t).delete().eq('id', id); if (error) throw error; }
+  db[t] = db[t].filter(r => r.id !== id);
+  if (t === 'habitos') db.habitos_registos = db.habitos_registos.filter(r => r.habito_id !== id);
+  if (!sb) guardarLocal();
+}
+async function upsertOrigem(t, linhas) {
+  if (!linhas.length) return;
+  if (sb) { const {data, error} = await sb.from(t).upsert(linhas, {onConflict: 'user_id,origem,origem_id'}).select(); if (error) throw error;
+    data.forEach(l => { const i = db[t].findIndex(r => r.id === l.id); if (i < 0) db[t].push(l); else db[t][i] = l; }); return; }
+  linhas.forEach(l => { const i = db[t].findIndex(r => r.origem === l.origem && r.origem_id === l.origem_id);
+    if (i < 0) db[t].push({id: uuid(), created_at: new Date().toISOString(), ...(t === 'movimentos' ? {natureza: 'variavel'} : {}), ...l}); else db[t][i] = {...db[t][i], ...l}; });
+  guardarLocal();
+}
+const msgErro = e => { const m = (e && (e.message || e.error_description)) || 'Ocorreu um erro.'; return m === 'Invalid login credentials' ? 'Email ou palavra-passe incorretos.' : m; };
+function toast(m) { const t = $('#toast'); t.textContent = m; t.style.display = 'block'; clearTimeout(toast.h); toast.h = setTimeout(() => t.style.display = 'none', 4200); }
+
+/* ---------- cálculos de domínio ---------- */
+// Ocorrências de uma obrigação desde o próximo vencimento até à data limite (as anteriores a hoje estão em atraso).
+function ocorrencias(o, ate) {
+  const r = [], p = PASSO[o.periodicidade];
+  for (let k = 0; k < 600; k++) { const d = p ? addMeses(o.proximo_vencimento, k * p) : o.proximo_vencimento; if (d > ate) break; r.push(d); if (!p) break; }
+  return r;
+}
+function obrigJanela(dias, ambito) {
+  const h = hoje(), ate = addDias(h, dias), r = [];
+  db.obrigacoes.filter(o => o.ativo && (!ambito || o.ambito === ambito)).forEach(o => ocorrencias(o, ate).forEach(d => r.push({o, data: d, atraso: d < h})));
+  return r.sort((a, b) => a.data.localeCompare(b.data));
+}
+const saldoContas = a => soma(db.contas.filter(c => c.ambito === a), c => c.saldo);
+const r2 = v => Math.round(v * 100) / 100;
+const recebido = f => f.valor_recebido != null ? num(f.valor_recebido) : (f.data_recebimento ? num(f.valor) : 0);
+const aberto = f => Math.max(0, r2(num(f.valor) - recebido(f)));
+const pagsDe = f => Array.isArray(f.pagamentos) && f.pagamentos.length ? f.pagamentos : (recebido(f) > 0 && f.data_recebimento ? [{data: f.data_recebimento, valor: recebido(f)}] : []);
+const recebidoEm = prefixo => r2(db.faturas.reduce((s, f) => s + soma(pagsDe(f).filter(g => String(g.data).startsWith(prefixo)), g => g.valor), 0));
+const porReceber = () => db.faturas.filter(f => aberto(f) > 0.004);
+const vencida = f => aberto(f) > 0.004 && f.data_vencimento && f.data_vencimento < hoje();
+const divAberto = d => Math.max(0, r2(num(d.valor) - num(d.valor_pago)));
+const dividasAbertas = () => db.dividas.filter(d => divAberto(d) > 0.004);
+const fornPorPagar = () => db.movimentos.filter(m => m.ambito === 'empresa' && m.tipo === 'despesa' && m.pago === false);
+const totalAPagar = () => r2(soma(dividasAbertas(), divAberto) + soma(fornPorPagar(), m => m.valor));
+function projecao(ambito, dias, incluirRec) {
+  const h = hoje(), ev = obrigJanela(dias, ambito).map(x => ({data: x.atraso ? h : x.data, desc: x.o.descricao + (x.atraso ? ' (em atraso desde ' + fData(x.data) + ')' : ''), valor: -num(x.o.valor)}));
+  if (incluirRec && ambito === 'empresa') porReceber().filter(f => f.data_vencimento && f.data_vencimento >= h && f.data_vencimento <= addDias(h, dias))
+    .forEach(f => ev.push({data: f.data_vencimento, desc: 'Recebimento previsto — ' + (f.numero ? f.numero + ', ' : '') + f.cliente, valor: aberto(f)}));
+  ev.sort((a, b) => a.data.localeCompare(b.data));
+  let s = saldoContas(ambito); const pts = [];
+  for (let i = 0; i <= dias; i++) { const d = addDias(h, i); s += soma(ev.filter(e => e.data === d), e => e.valor); pts.push({d, v: Math.round(s * 100) / 100}); }
+  return {pts, ev, min: pts.reduce((m, p) => p.v < m.v ? p : m, pts[0])};
+}
+function itensDoDia(d) {
+  const r = [];
+  db.compromissos.forEach(c => {
+    const oc = c.data === d || (d > c.data && (c.recorrencia === 'diaria' || (c.recorrencia === 'semanal' && difDias(c.data, d) % 7 === 0) ||
+      (c.recorrencia === 'mensal' && addMeses(c.data, (pd(d).getFullYear() - pd(c.data).getFullYear()) * 12 + pd(d).getMonth() - pd(c.data).getMonth()) === d)));
+    if (oc) r.push({hora: c.hora || '', titulo: c.titulo, tag: '', t: 'compromissos', id: c.id});
+  });
+  db.eventos_calendario.filter(e => String(e.data).slice(0, 10) <= d && String(e.data_fim || e.data).slice(0, 10) >= d).forEach(e => r.push({hora: e.dia_inteiro ? '' : (e.hora || ''), titulo: e.titulo + (e.local ? ' · ' + e.local : ''), tag: 'Google', t: '', id: e.id}));
+  db.obrigacoes.filter(o => o.ativo && o.proximo_vencimento <= d).forEach(o => { if (ocorrencias(o, d).includes(d)) r.push({hora: '', titulo: o.descricao + ' — ' + eur(o.valor), tag: 'Obrigação', t: 'obrigacoes', id: o.id}); });
+  db.treinos.filter(t => t.data === d).forEach(t => r.push({hora: '', titulo: lab(MODAL, t.modalidade) + (t.descricao ? ' — ' + t.descricao : ''), tag: t.feito ? 'Treino ✓' : 'Treino', t: 'treinos', id: t.id}));
+  return r.sort((a, b) => (a.hora || '99').localeCompare(b.hora || '99'));
+}
+const marcado = (hid, d) => db.habitos_registos.find(r => r.habito_id === hid && String(r.data).slice(0, 10) === d);
+function metricaHabito(hb) {
+  const h = hoje(), regs = db.habitos_registos.filter(r => r.habito_id === hb.id).map(r => String(r.data).slice(0, 10)).sort();
+  if (hb.tipo === 'bom') { let d = marcado(hb.id, h) ? h : addDias(h, -1), n = 0; while (regs.includes(d)) { n++; d = addDias(d, -1); } return 'Sequência: ' + n + (n === 1 ? ' dia' : ' dias'); }
+  if (!regs.length) return 'Sem ocorrências registadas';
+  const n = difDias(regs[regs.length - 1], h); return n <= 0 ? 'Ocorreu hoje' : n + (n === 1 ? ' dia' : ' dias') + ' sem ocorrência';
+}
+
+/* ---------- peças de interface ---------- */
+const ui = {vista: 'hoje', agModo: 'semana', agRef: hoje(), mes: hoje().slice(0, 7), trRef: hoje(), projRec: false, fatTodas: false};
+let graficos = {};
+const tile = (rot, val, sub) => `<div class="cartao tile"><div class="rot">${esc(rot)}</div><div class="val">${esc(val)}</div><div class="sub">${sub || '&nbsp;'}</div></div>`;
+const bNovo = (t, txt, defs) => `<button class="b" data-act="novo" data-t="${t}" data-defs="${esc(JSON.stringify(defs || {}))}">+ ${esc(txt)}</button>`;
+const bEdit = (t, id) => `<button class="b mini" data-act="editar" data-t="${t}" data-id="${esc(id)}">Editar</button>`;
+const cab = (titulo, extra) => `<div class="cab"><h2>${esc(titulo)}</h2>${extra || ''}</div>`;
+const tabela = (cols, linhas, vazio) => linhas.length ? `<div class="scroll"><table><thead><tr>${cols.map(c => `<th${c.n ? ' class="n"' : ''}>${esc(c.l)}</th>`).join('')}</tr></thead><tbody>${
+  linhas.map(l => '<tr>' + l.map((v, i) => `<td${cols[i].n ? ' class="n"' : ''}>${v}</td>`).join('') + '</tr>').join('')}</tbody></table></div>` : `<div class="vazio">${esc(vazio)}</div>`;
+const st = (cls, txt) => `<span class="st ${cls}">${esc(txt)}</span>`;
+function estadoVenc(d) {
+  const n = difDias(hoje(), d);
+  if (n < 0) return st('cri', '⚠ Em atraso há ' + (-n) + (n === -1 ? ' dia' : ' dias'));
+  if (n === 0) return st('avi', '● Vence hoje');
+  if (n <= 7) return st('avi', '● Vence em ' + n + (n === 1 ? ' dia' : ' dias'));
+  return st('', 'Em ' + n + ' dias');
+}
+const itemLi = x => `<li><span class="h">${esc(x.hora || '—')}</span><span class="t">${x.t ? `<button class="item" data-act="editar" data-t="${x.t}" data-id="${esc(x.id)}">${esc(x.titulo)}</button>` : esc(x.titulo)}</span>${x.tag ? `<span class="tag">${esc(x.tag)}</span>` : ''}</li>`;
+const navMes = () => `<button class="b mini" data-act="mes" data-n="-1" aria-label="Mês anterior">‹</button><span class="tag">${esc(fMes(ui.mes))}</span><button class="b mini" data-act="mes" data-n="1" aria-label="Mês seguinte">›</button>`;
+
+/* ---------- secções reutilizadas ---------- */
+function secContas(a) {
+  const cs = db.contas.filter(c => c.ambito === a);
+  return cab('Contas e saldos', bNovo('contas', 'Conta', {ambito: a})) + `<div class="cartao">${tabela([{l:'Conta'},{l:'Saldo à data de'},{l:'Saldo',n:1},{l:''}],
+    cs.map(c => [esc(c.nome), fData(c.atualizado_em), eur(c.saldo), bEdit('contas', c.id)]), 'Sem contas registadas.')}
+    <p class="nota">Os saldos são atualizados manualmente; marcar uma obrigação como paga não altera o saldo.</p></div>`;
+}
+function secProjecao(a) {
+  const p = projecao(a, 90, ui.projRec), id = 'proj-' + a; graficos[id] = {tipo: 'linha', pts: p.pts, ev: p.ev};
+  const semBase = !db.contas.some(c => c.ambito === a);
+  return cab('Projeção de caixa a 90 dias', a === 'empresa' ? `<label class="k" style="margin:0"><input type="checkbox" data-act="projrec" ${ui.projRec ? 'checked' : ''}> Incluir recebimentos previstos</label>` : '') +
+    `<div class="cartao"><div class="grelha" style="margin-bottom:10px"><div><div class="tile"><div class="rot">Saldo de partida</div><div class="val">${eur(p.pts[0].v - soma(p.ev.filter(e => e.data === hoje()), e => e.valor))}</div></div></div>
+    <div><div class="tile"><div class="rot">Saldo mínimo previsto</div><div class="val">${eur(p.min.v)}</div><div class="sub">${p.min.v < 0 ? st('cri', '⚠ Negativo em ' + fData(p.min.d)) : 'em ' + fData(p.min.d)}</div></div></div>
+    <div><div class="tile"><div class="rot">Saídas previstas (90 dias)</div><div class="val">${eur(-soma(p.ev.filter(e => e.valor < 0), e => e.valor))}</div></div></div></div>
+    <div class="graf" data-graf="${id}"></div>
+    <p class="nota">Pressupostos: parte da soma dos saldos das contas${semBase ? ' (não há contas registadas, pelo que parte de 0 €)' : ''}; subtrai as obrigações ativas nas datas de vencimento (as que estão em atraso entram hoje)${
+      a === 'empresa' ? (ui.projRec ? '; soma as faturas por receber na respetiva data de vencimento (as já vencidas e as que não têm data de vencimento não entram)' : '; não considera recebimentos') : ''}. Não inclui despesas variáveis nem receitas não registadas.</p>
+    <details><summary>Ver movimentos previstos (${p.ev.length})</summary>${tabela([{l:'Data'},{l:'Descrição'},{l:'Valor',n:1}], p.ev.map(e => [fData(e.data), esc(e.desc), eur(e.valor)]), 'Sem movimentos previstos no período.')}</details></div>`;
+}
+function secMovimentos(a) {
+  const ms = db.movimentos.filter(m => m.ambito === a && String(m.data).slice(0, 7) === ui.mes).sort((x, y) => String(y.data).localeCompare(String(x.data)));
+  const s = (tp, nat) => soma(ms.filter(m => m.tipo === tp && (!nat || m.natureza === nat)), m => m.valor);
+  const recFat = a === 'empresa' ? recebidoEm(ui.mes) : 0;
+  const rec = s('receita') + recFat, desp = s('despesa');
+  const cats = {}; ms.filter(m => m.tipo === 'despesa').forEach(m => { const c = m.categoria || 'Sem categoria'; cats[c] = (cats[c] || 0) + num(m.valor); });
+  return cab('Receitas e despesas', navMes() + bNovo('movimentos', 'Movimento', {ambito: a})) +
+    `<div class="grelha">${tile('Receitas do mês', eur(rec), a === 'empresa' ? 'faturas recebidas: ' + eur(recFat) + ' · outras: ' + eur(s('receita')) : '')}
+    ${tile('Despesas do mês', eur(desp), 'fixas: ' + eur(s('despesa', 'fixa')) + ' · variáveis: ' + eur(s('despesa', 'variavel')))}
+    ${tile('Saldo do mês', eur(rec - desp), rec - desp < 0 ? st('cri', '⚠ Negativo') : '')}</div>
+    <div class="col2" style="margin-top:12px"><div class="cartao"><h3>Movimentos de ${esc(fMes(ui.mes))}</h3>${tabela([{l:'Data'},{l:'Descrição'},{l:'Natureza'},{l:'Valor',n:1},{l:''}],
+      ms.map(m => [fDM(m.data), esc(m.descricao) + (m.categoria ? ' <span class="tag">' + esc(m.categoria) + '</span>' : ''), lab(NATUREZA, m.natureza) + (m.pago === false ? ' <span class="tag">por pagar</span>' : ''), (m.tipo === 'despesa' ? '−' : '+') + eur(m.valor), bEdit('movimentos', m.id)]), 'Sem movimentos neste mês.')}</div>
+    <div class="cartao"><h3>Despesas por categoria</h3>${tabela([{l:'Categoria'},{l:'Valor',n:1}], Object.entries(cats).sort((x, y) => y[1] - x[1]).map(([c, v]) => [esc(c), eur(v)]), 'Sem despesas neste mês.')}</div></div>`;
+}
+
+function secAnalise() {
+  const fs = db.faturas, grp = (arr, f) => arr.reduce((o, x) => { const k = f(x) || '—'; (o[k] = o[k] || []).push(x); return o; }, {});
+  // clientes
+  const porCli = grp(fs, f => f.cliente), comCli = grp(db.dividas.filter(d => d.tipo === 'comissao'), d => d.entidade);
+  const cli = Object.entries(porCli).map(([c, l]) => ({c, n: l.length, base: soma(l, f => f.base != null ? f.base : f.valor), tot: soma(l, f => f.valor), ab: soma(l, aberto), venc: soma(l.filter(vencida), aberto), com: soma(comCli[c] || [], d => d.base != null ? d.base : d.valor)})).sort((a, b) => b.base - a.base);
+  const tb = soma(cli, x => x.base);
+  // processos
+  const comProc = grp(db.dividas.filter(d => d.tipo === 'comissao'), d => (d.processo || '') + '|' + d.entidade);
+  const proc = Object.entries(grp(fs, f => (f.processo || '') + '|' + f.cliente)).map(([k, l]) => { const [p, c] = k.split('|'), com = soma(comProc[k] || [], d => d.base != null ? d.base : d.valor), base = soma(l, f => f.base != null ? f.base : f.valor);
+    return {p: p || '—', c, n: l.length, base, com, mar: base - com, ab: soma(l, aberto)}; }).sort((a, b) => b.base - a.base);
+  // IVA por trimestre
+  const tri = d => String(d).slice(0, 4) + ' T' + (Math.floor((Number(String(d).slice(5, 7)) - 1) / 3) + 1), T = {};
+  const norm = x => String(x || '').toLowerCase().normalize('NFD').replace(/[^a-z0-9]/g, ''), entCom = new Set(db.dividas.map(d => norm(d.entidade)).filter(Boolean)), tt = k => (T[k] = T[k] || {liq: 0, ded: 0, com: 0});
+  let dup = 0;
+  fs.forEach(f => { tt(tri(f.data_emissao)).liq += num(f.iva); });
+  db.dividas.forEach(d => { tt(tri(d.data)).com += num(d.iva); });
+  db.movimentos.filter(m => m.ambito === 'empresa' && m.tipo === 'despesa').forEach(m => { if (entCom.has(norm(m.entidade))) { dup++; return; } tt(tri(m.data)).ded += num(m.iva_dedutivel); });
+  const semIva = fs.filter(f => f.iva == null).length;
+  // despesas por categoria e mês
+  const h = hoje(), ms = Array.from({length: 6}, (_, i) => addMeses(h.slice(0, 8) + '01', i - 5).slice(0, 7));
+  const desp = db.movimentos.filter(m => m.ambito === 'empresa' && m.tipo === 'despesa' && ms.includes(String(m.data).slice(0, 7)));
+  const cats = Object.entries(grp(desp, m => m.categoria || 'Sem categoria')).map(([c, l]) => ({c, v: ms.map(k => soma(l.filter(m => String(m.data).slice(0, 7) === k), m => m.valor)), t: soma(l, m => m.valor)})).sort((a, b) => b.t - a.t);
+  const pc = (a, b) => b ? Math.round(100 * a / b) + ' %' : '—';
+  return cab('Clientes') + `<div class="cartao">${tabela([{l:'Cliente'},{l:'Faturas',n:1},{l:'Faturado s/ IVA',n:1},{l:'Peso',n:1},{l:'Comissões s/ IVA',n:1},{l:'Em aberto',n:1},{l:'Vencido',n:1}],
+      cli.map(x => [esc(x.c), x.n, eur(x.base), pc(x.base, tb), eur(x.com), eur(x.ab), x.venc > 0.004 ? st('cri', '⚠ ' + eur(x.venc)) : '—']), 'Sem faturas registadas.')}
+      <p class="nota">As comissões são associadas ao cliente pelo nome da entidade. O prazo médio de recebimento não é mostrado porque as datas de pagamento importadas não são fiáveis.</p></div>` +
+    cab('Margem por processo') + `<div class="cartao">${tabela([{l:'Processo'},{l:'Cliente'},{l:'Faturado s/ IVA',n:1},{l:'Comissões s/ IVA',n:1},{l:'Margem',n:1},{l:'%',n:1},{l:'Em aberto',n:1}],
+      proc.map(x => [esc(x.p), esc(x.c), eur(x.base), eur(x.com), eur(x.mar), pc(x.mar, x.base), eur(x.ab)]), 'Sem faturas registadas.')}
+      <p class="nota">Margem = faturado menos comissões do mesmo processo e cliente. Não inclui outras despesas, porque as despesas importadas não trazem processo.</p></div>` +
+    cab('IVA por trimestre (estimativa)') + `<div class="cartao">${tabela([{l:'Trimestre'},{l:'IVA liquidado',n:1},{l:'Dedutível — despesas',n:1},{l:'Dedutível — comissões',n:1},{l:'IVA a pagar',n:1}],
+      Object.entries(T).sort((a, b) => b[0].localeCompare(a[0])).map(([k, v]) => [k, eur(v.liq), eur(v.ded), eur(v.com), eur(v.liq - v.ded - v.com)]), 'Sem dados.')}
+      <p class="nota">Estimativa para planear a caixa; não substitui o apuramento do contabilista. Liquidado: IVA das faturas pela data de emissão. Dedutível — despesas: valor indicado na app CONTAS para cada despesa. Dedutível — comissões: IVA das comissões do GUITA, pela data do documento. ${dup ? dup + ' despesa(s) do CONTAS de entidades que também têm comissões no GUITA ficam fora das despesas, para o mesmo IVA não contar duas vezes.' : ''}${semIva ? ' ' + semIva + ' fatura(s) sem IVA registado ficam de fora.' : ''}</p></div>` +
+    cab('Despesas por categoria — últimos 6 meses') + `<div class="cartao">${tabela([{l:'Categoria'}, ...ms.map(k => ({l: MESES[Number(k.slice(5)) - 1], n: 1})), {l:'Total',n:1}],
+      cats.map(x => [esc(x.c), ...x.v.map(v => v ? eur(v) : '—'), eur(x.t)]), 'Sem despesas nos últimos 6 meses.')}</div>`;
+}
+
+/* ---------- vistas ---------- */
+const VISTAS = {
+  hoje: ['Hoje', () => {
+    const h = hoje(), ob30 = obrigJanela(30), atras = ob30.filter(x => x.atraso), pr = porReceber(), venc = pr.filter(vencida);
+    const sem0 = segunda(h), trSem = db.treinos.filter(t => t.data >= sem0 && t.data <= addDias(sem0, 6)), its = itensDoDia(h).filter(x => x.t === 'compromissos' || x.tag === 'Google');
+    const ob7 = ob30.filter(x => x.atraso || x.data <= addDias(h, 7));
+    const procs = db.processos.filter(p => p.estado === 'em_curso').sort((a, b) => (a.prazo || '9').localeCompare(b.prazo || '9'));
+    const m = h.slice(0, 7);
+    return `<form class="cartao" id="rapido" style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap"><input id="rapTxt" aria-label="Registo rápido" placeholder="Registo rápido: 45 € combustível empresa" style="flex:1;min-width:200px;padding:8px;border:1px solid var(--eixo);border-radius:8px;background:var(--sup);color:var(--ink);font:inherit"><button class="b pri" type="submit">Registar</button></form>
+    <div class="grelha">${tile('Caixa da empresa', eur(saldoContas('empresa')), db.contas.some(c => c.ambito === 'empresa') ? '' : 'sem contas registadas')}
+      ${tile('Por receber de clientes', eur(soma(pr, aberto)), venc.length ? st('cri', '⚠ ' + venc.length + ' vencida(s): ' + eur(soma(venc, aberto))) : pr.length + ' fatura(s) em aberto')}
+      ${tile('A pagar (comissões e fornecedores)', eur(totalAPagar()), dividasAbertas().length + ' comissão(ões) · ' + fornPorPagar().length + ' despesa(s)')}
+      ${tile('Contas pessoais', eur(saldoContas('pessoal')), db.contas.some(c => c.ambito === 'pessoal') ? '' : 'sem contas registadas')}
+      ${tile('Obrigações nos próximos 30 dias', eur(soma(ob30, x => x.o.valor)), atras.length ? st('cri', '⚠ ' + atras.length + ' em atraso') : ob30.length + ' pagamento(s)')}</div>
+    <div class="col2" style="margin-top:12px">
+      <div class="cartao"><h3>Compromissos de hoje</h3>${its.length ? '<ul class="lista">' + its.map(itemLi).join('') + '</ul>' : '<div class="vazio">Sem compromissos para hoje.</div>'}</div>
+      <div class="cartao"><h3>Obrigações — próximos 7 dias</h3>${ob7.length ? '<ul class="lista">' + ob7.map(x => `<li><span class="t">${esc(x.o.descricao)} <span class="tag">${lab(AMBITO, x.o.ambito)}</span><br>${estadoVenc(x.data)}</span><span>${eur(x.o.valor)}</span></li>`).join('') + '</ul>' : '<div class="vazio">Nada a vencer nos próximos 7 dias.</div>'}</div>
+      <div class="cartao"><h3>Treino — esta semana</h3><div class="sub" style="color:var(--ink2);font-size:13px;margin-bottom:6px">${trSem.filter(t => t.feito).length} de ${trSem.length} sessões realizadas</div>
+        ${trSem.filter(t => t.data === h).length ? '<ul class="lista">' + trSem.filter(t => t.data === h).map(liTreino).join('') + '</ul>' : '<div class="vazio">Sem sessões marcadas para hoje.</div>'}</div>
+      <div class="cartao"><h3>Hábitos de hoje</h3>${db.habitos.filter(x => x.ativo).length ? '<div class="chips">' + db.habitos.filter(x => x.ativo).map(hb => { const on = !!marcado(hb.id, h);
+        return `<button class="chip" aria-pressed="${on}" data-act="habito" data-id="${esc(hb.id)}" data-d="${h}">${on ? (hb.tipo === 'bom' ? '✓ ' : '✕ ') : ''}${esc(hb.nome)}</button>`; }).join('') + '</div><p class="nota">Bom hábito: marcar quando cumprido. Mau hábito: marcar quando ocorreu.</p>' : '<div class="vazio">Sem hábitos definidos.</div>'}</div>
+      <div class="cartao"><h3>Apartamento — ${esc(fMes(m))}</h3><ul class="lista">${TIPO_APT.map(([k, l]) => { const r = db.apartamento_registos.find(x => x.mes === m && x.tipo === k);
+        return `<li><span class="t">${l}</span><span>${r && r.valor != null ? eur(r.valor) : ''}</span>${!r ? st('', 'Sem registo') : r.estado === 'pago' ? st('bom', '✓ Pago') : st('avi', '● Pendente')}</li>`; }).join('')}</ul></div>
+      <div class="cartao"><h3>Empresa — processos e propostas</h3><ul class="lista">${procs.slice(0, 4).map(p => `<li><span class="t">${esc(p.nome)}</span>${p.prazo ? estadoVenc(p.prazo) : st('', 'Sem prazo')}</li>`).join('') || '<li class="vazio">Sem processos em curso.</li>'}
+        <li><span class="t">Propostas pendentes de resposta</span><span>${db.propostas.filter(p => p.estado === 'pendente').length}</span></li></ul></div>
+    </div>`;
+  }],
+  empresa: ['Empresa', () => {
+    const h = hoje(), ano = h.slice(0, 4), pr = porReceber(), venc = pr.filter(vencida);
+    const meses = []; for (let i = 11; i >= 0; i--) { const k = addMeses(h.slice(0, 8) + '01', -i).slice(0, 7);
+      meses.push({k, rot: MESES[Number(k.slice(5)) - 1], a: soma(db.faturas.filter(f => String(f.data_emissao).slice(0, 7) === k), f => f.valor), b: recebidoEm(k)}); }
+    graficos.fat = {tipo: 'barras', meses};
+    const fats = (ui.fatTodas ? db.faturas : pr).slice().sort((a, b) => String(b.data_emissao).localeCompare(String(a.data_emissao)));
+    const procs = db.processos.slice().sort((a, b) => (a.estado === 'concluido') - (b.estado === 'concluido') || (a.prazo || '9').localeCompare(b.prazo || '9'));
+    const cnt = e => db.propostas.filter(p => p.estado === e), decid = cnt('adjudicada').length + cnt('recusada').length;
+    return `<div class="grelha">${tile('Faturado em ' + ano, eur(soma(db.faturas.filter(f => String(f.data_emissao).slice(0, 4) === ano), f => f.valor)), 'com IVA')}
+      ${tile('Recebido em ' + ano, eur(recebidoEm(ano)))}
+      ${tile('Por receber', eur(soma(pr, aberto)), venc.length ? st('cri', '⚠ vencido: ' + eur(soma(venc, aberto))) : pr.length + ' fatura(s)')}
+      ${tile('A pagar', eur(totalAPagar()), 'comissões: ' + eur(soma(dividasAbertas(), divAberto)) + ' · fornecedores: ' + eur(soma(fornPorPagar(), m => m.valor)))}
+      ${tile('Caixa', eur(saldoContas('empresa')))}</div>
+      <div class="cab"><h2>Importar dados</h2><label class="b" style="cursor:pointer">Importar JSON (GUITA ou CONTAS)<input type="file" id="impFich" accept=".json,application/json" hidden></label></div>` +
+    secContas('empresa') + secProjecao('empresa') +
+    cab('Faturação e recebimentos — últimos 12 meses') + `<div class="cartao"><div class="legenda"><span><i style="background:var(--s1)"></i>Faturado</span><span><i style="background:var(--s2)"></i>Recebido</span></div><div class="graf" data-graf="fat"></div>
+      <details><summary>Ver tabela</summary>${tabela([{l:'Mês'},{l:'Faturado',n:1},{l:'Recebido',n:1}], meses.map(m => [fMes(m.k), eur(m.a), eur(m.b)]), '')}</details></div>` +
+    cab(ui.fatTodas ? 'Faturas — todas' : 'Faturas por receber', `<button class="b" data-act="fattodas">${ui.fatTodas ? 'Ver só por receber' : 'Ver todas'}</button>` + bNovo('faturas', 'Fatura')) +
+      `<div class="cartao">${tabela([{l:'N.º'},{l:'Cliente'},{l:'Emissão'},{l:'Vencimento'},{l:'Valor',n:1},{l:'Em aberto',n:1},{l:'Estado'},{l:''}], fats.map(f => [esc(f.numero || '—'), esc(f.cliente) + (f.processo ? ' <span class="tag">' + esc(f.processo) + '</span>' : ''), fData(f.data_emissao), fData(f.data_vencimento), eur(f.valor), eur(aberto(f)),
+        aberto(f) <= 0.004 ? st('bom', '✓ Recebida' + (f.data_recebimento ? ' em ' + fData(f.data_recebimento) : '')) : f.data_vencimento ? estadoVenc(f.data_vencimento) : st('', 'Sem vencimento'),
+        (aberto(f) <= 0.004 ? '' : `<button class="b mini" data-act="receber" data-id="${esc(f.id)}">Marcar recebida</button> `) + bEdit('faturas', f.id)]), ui.fatTodas ? 'Sem faturas registadas.' : 'Sem faturas por receber.')}</div>` +
+    cab('A pagar — comissões', bNovo('dividas', 'Valor a pagar')) + `<div class="cartao">${tabela([{l:'Ref.'},{l:'Entidade'},{l:'Descrição'},{l:'Data'},{l:'Valor',n:1},{l:'Em aberto',n:1},{l:''}],
+      dividasAbertas().sort((a, b) => String(a.entidade).localeCompare(String(b.entidade)) || String(a.data).localeCompare(String(b.data))).map(d => [esc(d.numero || '—'), esc(d.entidade) + (d.processo ? ' <span class="tag">' + esc(d.processo) + '</span>' : ''), esc(d.descricao || '—'), fData(d.data), eur(d.valor), eur(divAberto(d)),
+        `<button class="b mini" data-act="pagardiv" data-id="${esc(d.id)}">Marcar paga</button> ` + bEdit('dividas', d.id)]), 'Sem comissões por pagar.')}
+      ${db.dividas.length > dividasAbertas().length ? `<p class="nota">${db.dividas.length - dividasAbertas().length} valor(es) já pago(s) não mostrado(s).</p>` : ''}</div>` +
+    cab('A pagar — fornecedores') + `<div class="cartao">${tabela([{l:'Documento'},{l:'Entidade'},{l:'Categoria'},{l:'Data'},{l:'Valor',n:1},{l:''}],
+      fornPorPagar().map(m => [esc(m.numero || '—'), esc(m.entidade || m.descricao), esc(m.categoria || '—'), fData(m.data), eur(m.valor), `<button class="b mini" data-act="pagarmov" data-id="${esc(m.id)}">Marcar paga</button> ` + bEdit('movimentos', m.id)]), 'Sem despesas por pagar.')}</div>` +
+    secAnalise() + secMovimentos('empresa') +
+    cab('Processos', bNovo('processos', 'Processo')) + `<div class="cartao">${tabela([{l:'Ref.'},{l:'Designação'},{l:'Cliente'},{l:'Tipo'},{l:'Fase'},{l:'Prazo'},{l:'Estado'},{l:''}],
+      procs.map(p => [esc(p.referencia || '—'), esc(p.nome), esc(p.cliente || '—'), esc(p.tipo || '—'), esc(p.fase || '—'), p.prazo ? fData(p.prazo) + (p.estado === 'em_curso' ? '<br>' + estadoVenc(p.prazo) : '') : '—', lab(EST_PROC, p.estado), bEdit('processos', p.id)]), 'Sem processos registados.')}</div>` +
+    cab('Propostas', bNovo('propostas', 'Proposta')) + `<div class="grelha">${tile('Pendentes', String(cnt('pendente').length), eur(soma(cnt('pendente'), p => p.valor)))}${tile('Adjudicadas', String(cnt('adjudicada').length), eur(soma(cnt('adjudicada'), p => p.valor)))}
+      ${tile('Recusadas', String(cnt('recusada').length))}${tile('Taxa de adjudicação', decid ? Math.round(100 * cnt('adjudicada').length / decid) + ' %' : '—', decid ? 'sobre ' + decid + ' proposta(s) decidida(s)' : 'sem propostas decididas')}</div>
+      <div class="cartao" style="margin-top:12px">${tabela([{l:'Ref.'},{l:'Cliente'},{l:'Descrição'},{l:'Envio'},{l:'Valor',n:1},{l:'Estado'},{l:''}], db.propostas.slice().sort((a, b) => String(b.data_envio).localeCompare(String(a.data_envio)))
+        .map(p => [esc(p.referencia || '—'), esc(p.cliente), esc(p.descricao || '—'), fData(p.data_envio), p.valor != null ? eur(p.valor) : '—', lab(EST_PROP, p.estado), bEdit('propostas', p.id)]), 'Sem propostas registadas.')}</div>`;
+  }],
+  financas: ['Finanças', () => secContas('pessoal').replace('class="cab"', 'class="cab" style="margin-top:0"') + secProjecao('pessoal') + secMovimentos('pessoal')],
+  agenda: ['Agenda', () => {
+    const r = ui.agRef, h = hoje(); let corpo, titulo;
+    if (ui.agModo === 'dia') { const its = itensDoDia(r); titulo = pd(r).toLocaleDateString('pt-PT', {weekday:'long', day:'numeric', month:'long'});
+      corpo = `<div class="cartao">${its.length ? '<ul class="lista">' + its.map(itemLi).join('') + '</ul>' : '<div class="vazio">Sem registos neste dia.</div>'}</div>`; }
+    else if (ui.agModo === 'semana') { const s0 = segunda(r); titulo = fDM(s0) + ' a ' + fData(addDias(s0, 6));
+      corpo = '<div class="semana">' + DIAS.map((n, i) => { const d = addDias(s0, i), its = itensDoDia(d);
+        return `<div class="dia${d === h ? ' hoje' : ''}"><div class="dt"><b>${n} ${d.slice(8)}</b><button class="b mini" data-act="novo" data-t="compromissos" data-defs="${esc(JSON.stringify({data: d}))}" aria-label="Novo compromisso em ${fData(d)}">+</button></div>${
+          its.map(x => `<div class="ev"><button class="item" ${x.t ? `data-act="editar" data-t="${x.t}" data-id="${esc(x.id)}"` : 'disabled'}>${x.hora ? '<b>' + esc(x.hora) + '</b> ' : ''}${esc(x.titulo)}${x.tag ? ' <span class="tag">' + esc(x.tag) + '</span>' : ''}</button></div>`).join('') || '<div class="vazio">—</div>'}</div>`; }).join('') + '</div>'; }
+    else { const m0 = r.slice(0, 8) + '01', g0 = segunda(m0); titulo = fMes(r);
+      corpo = '<div class="mes">' + DIAS.map(n => `<div class="cd">${n}</div>`).join('') + Array.from({length: 42}, (_, i) => { const d = addDias(g0, i), its = itensDoDia(d);
+        return `<button class="${d.slice(0, 7) !== r.slice(0, 7) ? 'fora ' : ''}${d === h ? 'hoje' : ''}" data-act="verdia" data-d="${d}" aria-label="${fData(d)}, ${its.length} registo(s)"><div class="num">${Number(d.slice(8))}</div>${
+          its.slice(0, 2).map(x => `<div class="ev">${esc((x.hora ? x.hora + ' ' : '') + x.titulo)}</div>`).join('')}${its.length > 2 ? `<div class="ev">+${its.length - 2}</div>` : ''}<div class="cnt">${its.length ? '● ' + its.length : ''}</div></button>`; }).join('') + '</div>'; }
+    return cab('Agenda — ' + titulo, `<span class="seg">${[['dia','Dia'],['semana','Semana'],['mes','Mês']].map(([k, l]) => `<button data-act="agmodo" data-m="${k}" aria-pressed="${ui.agModo === k}">${l}</button>`).join('')}</span>
+      <button class="b mini" data-act="agnav" data-n="-1" aria-label="Anterior">‹</button><button class="b mini" data-act="agnav" data-n="0">Hoje</button><button class="b mini" data-act="agnav" data-n="1" aria-label="Seguinte">›</button>` + bNovo('compromissos', 'Compromisso', {data: r})).replace('class="cab"', 'class="cab" style="margin-top:0"') + corpo +
+      `<p class="nota">A agenda junta compromissos, vencimentos de obrigações e sessões de treino. Os eventos marcados «Google» são uma cópia do Google Calendar, atualizada por sincronização periódica (${db.eventos_calendario.length ? 'última: ' + esc(String(db.eventos_calendario.map(e => e.sincronizado_em).sort().pop()).slice(0, 16).replace('T', ' ')) + ' UTC' : 'ainda sem eventos copiados'}); edite-os no Google Calendar.</p>`;
+  }],
+  obrigacoes: ['Obrigações', () => {
+    const ob30 = obrigJanela(30), atras = ob30.filter(x => x.atraso), at = db.obrigacoes.filter(o => o.ativo).sort((a, b) => a.proximo_vencimento.localeCompare(b.proximo_vencimento)), inat = db.obrigacoes.filter(o => !o.ativo);
+    const lin = o => [esc(o.descricao), lab(AMBITO, o.ambito), lab(PERIOD, o.periodicidade), fData(o.proximo_vencimento) + (o.ativo ? '<br>' + estadoVenc(o.proximo_vencimento) : ''), eur(o.valor), (o.ativo ? `<button class="b mini" data-act="pagar" data-id="${esc(o.id)}">Marcar paga</button> ` : '') + bEdit('obrigacoes', o.id)];
+    const cols = [{l:'Descrição'},{l:'Âmbito'},{l:'Periodicidade'},{l:'Próximo vencimento'},{l:'Valor',n:1},{l:''}];
+    return `<div class="grelha">${tile('Em atraso', eur(soma(atras, x => x.o.valor)), atras.length ? st('cri', '⚠ ' + atras.length + ' pagamento(s)') : 'nenhum')}
+      ${tile('Próximos 30 dias — empresa', eur(soma(ob30.filter(x => x.o.ambito === 'empresa'), x => x.o.valor)))}${tile('Próximos 30 dias — pessoal', eur(soma(ob30.filter(x => x.o.ambito === 'pessoal'), x => x.o.valor)))}</div>` +
+      cab('Contas a pagar', bNovo('obrigacoes', 'Obrigação')) + `<div class="cartao">${tabela(cols, at.map(lin), 'Sem obrigações registadas.')}
+      <p class="nota">"Marcar paga" regista a despesa fixa nos movimentos com a data de hoje e avança o vencimento para o período seguinte (as obrigações únicas ficam inativas).</p>
+      ${inat.length ? `<details><summary>Inativas (${inat.length})</summary>${tabela(cols, inat.map(lin), '')}</details>` : ''}</div>`;
+  }],
+  apartamento: ['Apartamento', () => {
+    const h = hoje(), ms = Array.from({length: 12}, (_, i) => addMeses(h.slice(0, 8) + '01', -i).slice(0, 7));
+    const cel = (m, k) => { const r = db.apartamento_registos.find(x => x.mes === m && x.tipo === k);
+      return `<button class="b mini" data-act="apt" data-m="${m}" data-k="${k}">${!r ? '+ Registar' : (r.valor != null ? eur(r.valor) + ' · ' : '') + (r.estado === 'pago' ? '✓ Pago' : '● Pendente')}</button>`; };
+    const pend = db.apartamento_registos.filter(r => r.estado === 'pendente');
+    return `<div class="grelha">${tile('Registos pendentes', String(pend.length), pend.length ? eur(soma(pend, r => r.valor)) : 'tudo regularizado nos meses registados')}</div>` +
+      cab('Renda, água e luz — últimos 12 meses', CONFIG.LINK_APP_RENDAS ? `<a class="b" href="${esc(CONFIG.LINK_APP_RENDAS)}" target="_blank" rel="noopener">Abrir app de rendas ↗</a>` : '') +
+      `<div class="cartao">${tabela([{l:'Mês'}, ...TIPO_APT.map(t => ({l: t[1]}))], ms.map(m => [esc(fMes(m)), ...TIPO_APT.map(t => cel(m, t[0]))]), '')}
+      <p class="nota">Este separador é um resumo introduzido à mão; não está sincronizado com outras aplicações.</p></div>`;
+  }],
+  treino: ['Treino', () => {
+    const s0 = segunda(ui.trRef), h = hoje(), sem = db.treinos.filter(t => t.data >= s0 && t.data <= addDias(s0, 6));
+    const fut = db.treinos.filter(t => t.data > addDias(s0, 6)).sort((a, b) => a.data.localeCompare(b.data)).slice(0, 30);
+    const porMod = MODAL.map(([k, l]) => { const x = sem.filter(t => t.modalidade === k); return x.length ? [l, x.filter(t => t.feito).length + ' / ' + x.length, soma(x, t => t.duracao_min) + ' min', soma(x.filter(t => t.feito), t => t.duracao_min) + ' min'] : null; }).filter(Boolean);
+    return cab('Semana de ' + fDM(s0) + ' a ' + fData(addDias(s0, 6)), `<button class="b mini" data-act="trnav" data-n="-1" aria-label="Semana anterior">‹</button><button class="b mini" data-act="trnav" data-n="0">Esta semana</button><button class="b mini" data-act="trnav" data-n="1" aria-label="Semana seguinte">›</button>` + bNovo('treinos', 'Sessão', {data: ui.trRef})).replace('class="cab"', 'class="cab" style="margin-top:0"') +
+      `<div class="grelha" style="margin-bottom:12px">${tile('Sessões realizadas', sem.filter(t => t.feito).length + ' de ' + sem.length)}${tile('Tempo planeado', soma(sem, t => t.duracao_min) + ' min')}${tile('Tempo realizado', soma(sem.filter(t => t.feito), t => t.duracao_min) + ' min')}</div>
+      <div class="semana">${DIAS.map((n, i) => { const d = addDias(s0, i), ts = sem.filter(t => t.data === d);
+        return `<div class="dia${d === h ? ' hoje' : ''}"><div class="dt"><b>${n} ${d.slice(8)}</b><button class="b mini" data-act="novo" data-t="treinos" data-defs="${esc(JSON.stringify({data: d}))}" aria-label="Nova sessão em ${fData(d)}">+</button></div>${ts.length ? '<ul class="lista">' + ts.map(liTreino).join('') + '</ul>' : '<div class="vazio">—</div>'}</div>`; }).join('')}</div>` +
+      cab('Por modalidade nesta semana') + `<div class="cartao">${tabela([{l:'Modalidade'},{l:'Sessões (feitas / planeadas)'},{l:'Planeado',n:1},{l:'Realizado',n:1}], porMod, 'Sem sessões nesta semana.')}</div>` +
+      cab('Programado para depois desta semana') + `<div class="cartao">${tabela([{l:'Data'},{l:'Modalidade'},{l:'Descrição'},{l:'Duração',n:1},{l:''}], fut.map(t => [fData(t.data), lab(MODAL, t.modalidade), esc(t.descricao || '—'), t.duracao_min ? t.duracao_min + ' min' : '—', bEdit('treinos', t.id)]), 'Sem sessões futuras registadas.')}
+      <p class="nota">As sessões são introduzidas à mão. A sincronização com o Garmin ainda não está implementada.</p></div>`;
+  }],
+  habitos: ['Hábitos', () => {
+    const h = hoje(), dias = Array.from({length: 7}, (_, i) => addDias(h, -i)), hs = db.habitos.filter(x => x.ativo), inat = db.habitos.filter(x => !x.ativo);
+    const bloco = tp => { const l = hs.filter(x => x.tipo === tp); return `<div class="cartao" style="margin-bottom:12px"><h3>${tp === 'bom' ? 'Bons hábitos — marcar quando cumprido' : 'Maus hábitos — marcar quando ocorreu'}</h3>${
+      tabela([{l:'Hábito'}, ...dias.map(d => ({l: d === h ? 'hoje' : DIAS[(pd(d).getDay() + 6) % 7] + ' ' + d.slice(8)})), {l:'Indicador'}, {l:''}], l.map(hb => [esc(hb.nome), ...dias.map(d => { const on = !!marcado(hb.id, d);
+        return `<button class="hb" aria-pressed="${on}" aria-label="${esc(hb.nome)}, ${fData(d)}" data-act="habito" data-id="${esc(hb.id)}" data-d="${d}">${on ? (tp === 'bom' ? '✓' : '✕') : ''}</button>`; }), esc(metricaHabito(hb)), bEdit('habitos', hb.id)]), tp === 'bom' ? 'Sem bons hábitos definidos.' : 'Sem maus hábitos definidos.')}</div>`; };
+    return cab('Hábitos — últimos 7 dias (mais recente primeiro)', bNovo('habitos', 'Hábito')).replace('class="cab"', 'class="cab" style="margin-top:0"') + bloco('bom') + bloco('mau') +
+      (inat.length ? `<details><summary>Inativos (${inat.length})</summary>${tabela([{l:'Hábito'},{l:'Tipo'},{l:''}], inat.map(x => [esc(x.nome), lab(TIPO_HAB, x.tipo), bEdit('habitos', x.id)]), '')}</details>` : '');
+  }]
+};
+function liTreino(t) { return `<li><button class="hb" aria-pressed="${!!t.feito}" aria-label="Marcar como realizada" data-act="feito" data-id="${esc(t.id)}">${t.feito ? '✓' : ''}</button><span class="t"><button class="item" data-act="editar" data-t="treinos" data-id="${esc(t.id)}">${esc(lab(MODAL, t.modalidade))}${t.descricao ? ' — ' + esc(t.descricao) : ''}</button>${t.duracao_min ? '<span style="color:var(--mut)"> ' + t.duracao_min + ' min</span>' : ''}</span></li>`; }
+
+/* ---------- desenho ---------- */
+function render() {
+  $('#nav').innerHTML = Object.entries(VISTAS).map(([k, v]) => `<button data-act="vista" data-v="${k}"${ui.vista === k ? ' aria-current="page"' : ''}>${v[0]}</button>`).join('');
+  graficos = {};
+  const aviso = sb ? '' : `<div class="aviso"><b>Modo local de demonstração.</b> ${memoriaApenas ? 'Este navegador não permite guardar dados: tudo o que introduzir perde-se ao fechar a página.' : 'Os dados ficam guardados apenas neste navegador e neste dispositivo.'} Para sincronizar entre computador e telemóvel, preencha a configuração do Supabase no início do código.</div>`;
+  $('#app').innerHTML = aviso + VISTAS[ui.vista][1]();
+  desenharGraficos();
+}
+function ticks(lo, hi, n) { const bruto = (hi - lo) / n, p = Math.pow(10, Math.floor(Math.log10(bruto))), f = bruto / p, passo = (f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10) * p, r = [];
+  for (let v = Math.floor(lo / passo) * passo; v <= hi + passo * .001; v += passo) r.push(Math.round(v * 100) / 100); if (r[r.length - 1] < hi) r.push(r[r.length - 1] + passo); return r; }
+const fEixo = (v, max) => (max >= 10000 ? new Intl.NumberFormat('pt-PT', {notation:'compact', maximumFractionDigits:1}).format(v) : new Intl.NumberFormat('pt-PT').format(v)) + ' €';
+function desenharGraficos() {
+  document.querySelectorAll('[data-graf]').forEach(el => {
+    const g = graficos[el.dataset.graf]; if (!g) return;
+    const W = Math.max(280, el.clientWidth), H = 230, m = {l: 62, r: 14, t: 14, b: 26}, pw = W - m.l - m.r, ph = H - m.t - m.b;
+    let lo, hi, corpo = '';
+    if (g.tipo === 'linha') { const vs = g.pts.map(p => p.v); lo = Math.min(0, ...vs); hi = Math.max(0, ...vs); }
+    else { lo = 0; hi = Math.max(0, ...g.meses.map(x => Math.max(x.a, x.b))); }
+    if (hi === lo) hi = lo + 100;
+    const tk = ticks(lo, hi, 4); lo = tk[0]; hi = tk[tk.length - 1];
+    const y = v => m.t + ph * (1 - (v - lo) / (hi - lo)), maxAbs = Math.max(Math.abs(lo), Math.abs(hi));
+    let svg = tk.map(v => `<line x1="${m.l}" x2="${W - m.r}" y1="${y(v)}" y2="${y(v)}" stroke="${v === 0 ? 'var(--eixo)' : 'var(--lin)'}"/><text x="${m.l - 8}" y="${y(v) + 4}" text-anchor="end" font-size="11" fill="var(--mut)">${esc(fEixo(v, maxAbs))}</text>`).join('');
+    if (g.tipo === 'linha') {
+      const n = g.pts.length, x = i => m.l + pw * i / (n - 1);
+      let d = `M${x(0)} ${y(g.pts[0].v)}`; for (let i = 1; i < n; i++) d += `H${x(i)}V${y(g.pts[i].v)}`;
+      for (let i = 0, ps = W < 520 ? 30 : 15; i < n; i += ps) svg += `<text x="${x(i)}" y="${H - 8}" text-anchor="${i === 0 ? 'start' : i >= n - 1 ? 'end' : 'middle'}" font-size="11" fill="var(--mut)">${fDM(g.pts[i].d)}</text>`;
+      const im = g.pts.reduce((b, p, i) => p.v < g.pts[b].v ? i : b, 0);
+      corpo = `<path d="${d}" fill="none" stroke="var(--s1)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+        ${g.pts[im].v < g.pts[n - 1].v ? `<circle cx="${x(im)}" cy="${y(g.pts[im].v)}" r="4" fill="var(--s1)" stroke="var(--sup)" stroke-width="2"/>` : ''}
+        <circle cx="${x(n - 1)}" cy="${y(g.pts[n - 1].v)}" r="4" fill="var(--s1)" stroke="var(--sup)" stroke-width="2"/>
+        <line class="mira" y1="${m.t}" y2="${m.t + ph}" stroke="var(--eixo)" style="display:none"/><rect class="alvo" x="${m.l}" y="${m.t}" width="${pw}" height="${ph}" fill="transparent"/>`;
+      el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" height="${H}" role="img" aria-label="Saldo previsto por dia nos próximos 90 dias">${svg}${corpo}</svg>`;
+      const alvo = el.querySelector('.alvo'), mira = el.querySelector('.mira');
+      alvo.addEventListener('pointermove', e => { const r = alvo.getBoundingClientRect(), i = Math.max(0, Math.min(n - 1, Math.round((e.clientX - r.left) / r.width * (n - 1)))), p = g.pts[i];
+        mira.setAttribute('x1', x(i)); mira.setAttribute('x2', x(i)); mira.style.display = '';
+        dica(e, eur(p.v), [fData(p.d), ...g.ev.filter(v => v.data === p.d).map(v => v.desc + ': ' + eur(v.valor))], ['var(--s1)']); });
+      alvo.addEventListener('pointerleave', () => { mira.style.display = 'none'; $('#tip').style.display = 'none'; });
+    } else {
+      const banda = pw / g.meses.length, bw = Math.max(3, Math.min(24, (banda - 8) / 2)), y0 = y(0);
+      const barra = (x, v, cor) => { const yt = y(v), hh = y0 - yt; if (hh <= 0) return ''; const r = Math.min(4, hh, bw / 2);
+        return `<path d="M${x} ${y0}V${yt + r}Q${x} ${yt} ${x + r} ${yt}H${x + bw - r}Q${x + bw} ${yt} ${x + bw} ${yt + r}V${y0}Z" fill="${cor}"/>`; };
+      g.meses.forEach((mm, i) => { const cx = m.l + banda * (i + .5);
+        corpo += barra(cx - bw - 1, mm.a, 'var(--s1)') + barra(cx + 1, mm.b, 'var(--s2)');
+        if (banda >= 34 || i % 2 === (g.meses.length - 1) % 2) svg += `<text x="${cx}" y="${H - 8}" text-anchor="middle" font-size="11" fill="var(--mut)">${mm.rot}</text>`;
+        corpo += `<rect class="alvo" data-i="${i}" tabindex="0" x="${m.l + banda * i}" y="${m.t}" width="${banda}" height="${ph}" fill="transparent" aria-label="${esc(fMes(mm.k))}: faturado ${esc(eur(mm.a))}, recebido ${esc(eur(mm.b))}"/>`; });
+      el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" height="${H}" role="img" aria-label="Faturado e recebido por mês">${svg}${corpo}</svg>`;
+      el.querySelectorAll('.alvo').forEach(a => { const mm = g.meses[a.dataset.i];
+        const mostra = e => { a.setAttribute('fill', 'rgba(128,128,128,.10)'); dica(e, fMes(mm.k), ['Faturado: ' + eur(mm.a), 'Recebido: ' + eur(mm.b)], [null, 'var(--s1)', 'var(--s2)'], a); };
+        const esconde = () => { a.setAttribute('fill', 'transparent'); $('#tip').style.display = 'none'; };
+        a.addEventListener('pointermove', mostra); a.addEventListener('focus', mostra); a.addEventListener('pointerleave', esconde); a.addEventListener('blur', esconde); });
+    }
+  });
+}
+function dica(e, titulo, linhas, cores, alvo) {
+  const t = $('#tip'); t.textContent = ''; const b = document.createElement('b');
+  if (cores && cores[0]) { const k = document.createElement('span'); k.className = 'k'; k.style.background = cores[0]; b.appendChild(k); }
+  b.appendChild(document.createTextNode(titulo)); t.appendChild(b);
+  linhas.forEach((l, i) => { const d = document.createElement('div'); if (cores && cores[i + 1]) { const k = document.createElement('span'); k.className = 'k'; k.style.background = cores[i + 1]; d.appendChild(k); } d.appendChild(document.createTextNode(l)); t.appendChild(d); });
+  t.style.display = 'block';
+  let px = e.clientX, py = e.clientY; if (px == null && alvo) { const r = alvo.getBoundingClientRect(); px = r.left + r.width / 2; py = r.top + 20; }
+  const w = t.offsetWidth, hh = t.offsetHeight;
+  t.style.left = Math.max(6, Math.min(window.innerWidth - w - 6, px + 14)) + 'px'; t.style.top = Math.max(6, py - hh - 12) + 'px';
+}
+
+/* ---------- formulário genérico ---------- */
+function campoHtml(c, v) {
+  const id = 'f_' + c.k, req = c.req ? ' required' : '';
+  if (c.t === 'check') return `<label class="k"><input type="checkbox" id="${id}"${v ? ' checked' : ''}> ${esc(c.l)}</label>`;
+  if (c.t === 'select') return `<label class="c">${esc(c.l)}<select id="${id}">${c.o.map(o => `<option value="${esc(o[0])}"${o[0] === v ? ' selected' : ''}>${esc(o[1])}</option>`).join('')}</select></label>`;
+  const tipo = {money:'text', int:'number', date:'date', time:'time', month:'month', text:'text'}[c.t];
+  const extra = c.t === 'money' ? ' inputmode="decimal" placeholder="0,00"' : c.t === 'int' ? ' min="0" step="1"' : c.t === 'month' ? ' pattern="\\d{4}-\\d{2}" placeholder="AAAA-MM"' : '';
+  const val = v == null ? '' : c.t === 'money' ? String(v).replace('.', ',') : c.t === 'date' ? String(v).slice(0, 10) : c.t === 'time' ? String(v).slice(0, 5) : v;
+  return `<label class="c">${esc(c.l)}${c.req ? ' *' : ''}<input id="${id}" type="${tipo}" value="${esc(val)}"${extra}${req}></label>`;
+}
+function lerForm(def) {
+  const d = {};
+  for (const c of def.campos) {
+    const el = $('#f_' + c.k);
+    if (c.t === 'check') { d[c.k] = el.checked; continue; }
+    let v = el.value.trim();
+    if (c.t === 'money') { if (v === '') { d[c.k] = c.zero ? 0 : null; } else { const n = Number(v.includes(',') ? v.replace(/[.\s]/g, '').replace(',', '.') : v.replace(/\s/g, ''));
+        if (!isFinite(n) || n < 0 && c.k !== 'saldo') throw new Error('Valor inválido em "' + c.l + '".'); d[c.k] = n; } }
+    else if (c.t === 'int') d[c.k] = v === '' ? null : Math.round(Number(v));
+    else d[c.k] = v === '' ? null : v;
+    if (c.t === 'month' && d[c.k] && !/^\d{4}-(0[1-9]|1[0-2])$/.test(d[c.k])) throw new Error('O mês deve ter o formato AAAA-MM.');
+    if (c.req && d[c.k] == null) throw new Error('Preencha o campo "' + c.l + '".');
+  }
+  return d;
+}
+function abrirForm(t, id, defs) {
+  const def = FORMS[t], linha = id ? db[t].find(r => r.id === id) : null, base = linha || defs || {};
+  $('#dlg').innerHTML = `<form id="frm" novalidate><h2>${linha ? 'Editar' : 'Novo registo'} — ${esc(def.titulo)}</h2>${def.campos.map(c => campoHtml(c, base[c.k] !== undefined ? base[c.k] : c.def === 'hoje' ? hoje() : c.def !== undefined ? c.def : c.o ? c.o[0][0] : null)).join('')}
+    <div class="erro" id="frmErr"></div><div class="acoes">${linha ? `<button type="button" class="b perigo" data-act="apagar" data-t="${t}" data-id="${esc(id)}">Eliminar</button>` : ''}<span class="esp"></span>
+    <button type="button" class="b" data-act="fechar">Cancelar</button><button type="submit" class="b pri">Guardar</button></div></form>`;
+  $('#dlg').showModal();
+  $('#frm').addEventListener('submit', async e => { e.preventDefault();
+    try { const dados = lerForm(def); if (linha) await atualizar(t, id, dados); else await inserir(t, dados); $('#dlg').close(); render(); }
+    catch (err) { $('#frmErr').textContent = msgErro(err); } });
+}
+
+/* ---------- importação das apps GUITA e CONTAS ---------- */
+async function importarJSON(texto) {
+  let j; try { j = JSON.parse(texto); } catch (e) { throw new Error('O ficheiro não é um JSON válido.'); }
+  if (!j || !Array.isArray(j.docs) || !['GUITA', 'CONTAS'].includes(j.app)) throw new Error('Ficheiro não reconhecido: esperava um backup da app GUITA ou CONTAS.');
+  const dias = Number(j.cfg && j.cfg.dias) || 0, rel = [], pags = d => (Array.isArray(d.pags) ? d.pags : []).map(g => ({data: g.data, valor: num(g.valor)}));
+  const vivos = j.docs.filter(d => !d.anulada), anul = j.docs.filter(d => d.anulada);
+  const limpar = async (t, origem) => { for (const d of anul) { const r = db[t].find(x => x.origem === origem && x.origem_id === d.id); if (r) await eliminar(t, r.id); } };
+  if (j.app === 'GUITA') {
+    const desc = d => [d.trabalho, d.obs].filter(Boolean).join(' — ') || null;
+    const R = vivos.filter(d => d.tipo === 'R'), D = vivos.filter(d => d.tipo === 'D'), outros = vivos.filter(d => !['R', 'D'].includes(d.tipo));
+    await upsertOrigem('faturas', R.map(d => { const pg = pags(d), ab = num(d.aberto);
+      return {origem: 'guita', origem_id: d.id, numero: d.numero, cliente: d.cliente, descricao: desc(d), processo: d.processo || null, base: num(d.base), iva: num(d.iva), valor: num(d.total), valor_recebido: num(d.pago), pagamentos: pg,
+        data_emissao: d.data, data_vencimento: dias ? addDias(d.data, dias) : null, data_recebimento: ab <= 0.004 && pg.length ? pg.map(g => g.data).sort().pop() : null}; }));
+    await upsertOrigem('dividas', D.map(d => ({origem: 'guita', origem_id: d.id, tipo: 'comissao', numero: d.numero, entidade: d.cliente, descricao: desc(d), processo: d.processo || null, base: num(d.base), iva: num(d.iva), valor: num(d.total), valor_pago: num(d.pago), pagamentos: pags(d), data: d.data})));
+    await limpar('faturas', 'guita'); await limpar('dividas', 'guita');
+    rel.push(R.length + ' faturas a clientes (tipo R): total ' + eur(soma(R, d => d.total)) + ', em aberto ' + eur(soma(R, d => d.aberto)) + '.');
+    rel.push(D.length + ' comissões a pagar (tipo D): total ' + eur(soma(D, d => d.total)) + ', em aberto ' + eur(soma(D, d => d.aberto)) + '.');
+    rel.push(dias ? 'Vencimento das faturas calculado como data de emissão + ' + dias + ' dias (valor "dias" da configuração do GUITA).' : 'Faturas importadas sem data de vencimento (o ficheiro não indica prazo).');
+    if (outros.length) rel.push('⚠ ' + outros.length + ' documento(s) de tipo desconhecido ignorado(s).');
+  } else {
+    const D = vivos.filter(d => d.tipo === 'D'), R = vivos.filter(d => d.tipo !== 'D'), estr = D.filter(d => !['k', 'p'].includes(d.estado));
+    await upsertOrigem('movimentos', D.map(d => ({origem: 'contas', origem_id: d.id, ambito: 'empresa', tipo: 'despesa', descricao: d.ent_nome || d.numero || 'Despesa', entidade: d.ent_nome || null, numero: d.numero || null, categoria: d.categoria || null,
+      base: num(d.base), iva: num(d.iva), iva_dedutivel: num(d.iva_ded), valor: num(d.total), data: d.data, pago: d.estado === 'k', data_pagamento: d.data_pag || null})));
+    await limpar('movimentos', 'contas');
+    const np = D.filter(d => d.estado !== 'k');
+    rel.push(D.length + ' despesas: total ' + eur(soma(D, d => d.total)) + '; por pagar ' + np.length + ' (' + eur(soma(np, d => d.total)) + ').');
+    rel.push('Novas despesas entram como "variável"; pode alterar a natureza no painel e a reimportação não a repõe.');
+    if (R.length) rel.push('⚠ ' + R.length + ' documento(s) que não são despesa foram ignorados: as receitas vêm do GUITA, para não contar duas vezes.');
+    if (estr.length) rel.push('⚠ ' + estr.length + ' despesa(s) com estado desconhecido tratada(s) como por pagar.');
+    rel.push('Os PDF anexos no ficheiro não são importados.');
+  }
+  if (anul.length) rel.push(anul.length + ' documento(s) anulado(s) não importado(s) (e removidos do painel, se já lá estivessem).');
+  return {app: j.app, data: j.gravadoEm || j.exportado || '', rel};
+}
+document.addEventListener('change', async e => {
+  if (e.target.id !== 'impFich' || !e.target.files[0]) return;
+  try { const r = await importarJSON(await e.target.files[0].text()); render();
+    $('#dlg').innerHTML = `<h2>Importação concluída — ${esc(r.app)}</h2><p class="nota">Ficheiro gravado em ${esc(String(r.data).slice(0, 16).replace('T', ' '))}</p><ul>${r.rel.map(x => `<li>${esc(x)}</li>`).join('')}</ul><div class="acoes"><span class="esp"></span><button class="b pri" data-act="fechar">Fechar</button></div>`;
+    $('#dlg').showModal(); }
+  catch (err) { toast(msgErro(err)); }
+});
+
+/* ---------- registo rápido: interpreta uma frase e abre o formulário já preenchido para confirmar ---------- */
+function interpretarRapido(txt) {
+  const m = txt.match(/(\d+(?:[.,]\d{1,2})?)\s*(?:€|eur(?:os)?)?/i); if (!m) throw new Error('Indique um valor, por exemplo: 45 € combustível empresa.');
+  let resto = (txt.slice(0, m.index) + ' ' + txt.slice(m.index + m[0].length)).trim();
+  const tem = re => { const x = re.test(resto); resto = resto.replace(re, ' '); return x; };
+  const empresa = tem(/\b(da\s+)?empresa\b/i); tem(/\bpessoal\b/i);
+  const receita = tem(/\breceita\b/i); tem(/\bdespesa\b/i);
+  const fixa = tem(/\bfixa\b/i); tem(/\bvari[aá]vel\b/i);
+  const ontem = tem(/\bontem\b/i); tem(/\bhoje\b/i);
+  resto = resto.replace(/^\s*(de|em|com)\s+/i, '').replace(/\s+/g, ' ').trim();
+  const cat = (db.movimentos.find(x => x.categoria && resto && x.categoria.toLowerCase() === resto.toLowerCase()) || {}).categoria || null;
+  return {ambito: empresa ? 'empresa' : 'pessoal', tipo: receita ? 'receita' : 'despesa', natureza: fixa ? 'fixa' : 'variavel', descricao: resto ? resto[0].toUpperCase() + resto.slice(1) : '', categoria: cat, valor: Number(m[1].replace(',', '.')), data: ontem ? addDias(hoje(), -1) : hoje(), pago: true};
+}
+document.addEventListener('submit', e => { if (e.target.id !== 'rapido') return; e.preventDefault();
+  try { abrirForm('movimentos', null, interpretarRapido($('#rapTxt').value)); } catch (err) { toast(msgErro(err)); } });
+
+/* ---------- ações ---------- */
+const ACOES = {
+  vista: b => { ui.vista = b.dataset.v; window.scrollTo(0, 0); },
+  novo: b => abrirForm(b.dataset.t, null, JSON.parse(b.dataset.defs || '{}')),
+  editar: b => abrirForm(b.dataset.t, b.dataset.id),
+  fechar: () => $('#dlg').close(),
+  apagar: async b => { if (b.dataset.conf) { await eliminar(b.dataset.t, b.dataset.id); $('#dlg').close(); } else { b.dataset.conf = 1; b.textContent = 'Confirmar eliminação'; return false; } },
+  mes: b => { ui.mes = addMeses(ui.mes + '-01', Number(b.dataset.n)).slice(0, 7); },
+  projrec: b => { ui.projRec = b.checked; },
+  fattodas: () => { ui.fatTodas = !ui.fatTodas; },
+  receber: async b => { const f = db.faturas.find(x => x.id === b.dataset.id); if (!f) return;
+    await atualizar('faturas', f.id, {data_recebimento: hoje(), valor_recebido: num(f.valor), pagamentos: [...pagsDe(f), {data: hoje(), valor: aberto(f)}]}); },
+  pagardiv: async b => { const d = db.dividas.find(x => x.id === b.dataset.id); if (!d) return;
+    await atualizar('dividas', d.id, {valor_pago: num(d.valor), pagamentos: [...(Array.isArray(d.pagamentos) ? d.pagamentos : []), {data: hoje(), valor: divAberto(d)}]}); },
+  pagarmov: async b => { await atualizar('movimentos', b.dataset.id, {pago: true, data_pagamento: hoje()}); },
+  pagar: async b => { const o = db.obrigacoes.find(x => x.id === b.dataset.id); if (!o) return;
+    await inserir('movimentos', {ambito: o.ambito, tipo: 'despesa', natureza: 'fixa', descricao: o.descricao, categoria: 'Obrigações', valor: num(o.valor), data: hoje()});
+    const p = PASSO[o.periodicidade]; await atualizar('obrigacoes', o.id, p ? {proximo_vencimento: addMeses(o.proximo_vencimento, p)} : {ativo: false});
+    toast('Pagamento registado nos movimentos.'); },
+  agmodo: b => { ui.agModo = b.dataset.m; },
+  agnav: b => { const n = Number(b.dataset.n); ui.agRef = n === 0 ? hoje() : ui.agModo === 'dia' ? addDias(ui.agRef, n) : ui.agModo === 'semana' ? addDias(ui.agRef, 7 * n) : addMeses(ui.agRef.slice(0, 8) + '01', n); },
+  verdia: b => { ui.agRef = b.dataset.d; ui.agModo = 'dia'; },
+  trnav: b => { const n = Number(b.dataset.n); ui.trRef = n === 0 ? hoje() : addDias(ui.trRef, 7 * n); },
+  feito: async b => { const t = db.treinos.find(x => x.id === b.dataset.id); if (t) await atualizar('treinos', t.id, {feito: !t.feito}); },
+  habito: async b => { const r = marcado(b.dataset.id, b.dataset.d); if (r) await eliminar('habitos_registos', r.id); else await inserir('habitos_registos', {habito_id: b.dataset.id, data: b.dataset.d}); },
+  apt: b => { const r = db.apartamento_registos.find(x => x.mes === b.dataset.m && x.tipo === b.dataset.k); abrirForm('apartamento_registos', r && r.id, {mes: b.dataset.m, tipo: b.dataset.k}); },
+  sair: async () => { await sb.auth.signOut(); location.reload(); }
+};
+async function despachar(e) {
+  const b = e.target.closest('[data-act]'); if (!b) return;
+  if (b.type === 'checkbox' && e.type !== 'change') return; if (b.type !== 'checkbox' && e.type === 'change') return;
+  const semRender = ['novo', 'editar', 'fechar', 'apt', 'sair'];
+  try { const r = await ACOES[b.dataset.act](b); if (r !== false && !semRender.includes(b.dataset.act)) render(); }
+  catch (err) { toast(msgErro(err)); }
+}
+document.addEventListener('click', despachar);
+document.addEventListener('change', despachar);
+let rz; window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(desenharGraficos, 150); });
+
+/* ---------- arranque e sessão ---------- */
+function carregarScript(src) { return new Promise((ok, ko) => { const s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = () => ko(new Error('Não foi possível carregar a biblioteca do Supabase.')); document.head.appendChild(s); }); }
+function ecraLogin(msg) {
+  $('#nav').innerHTML = '';
+  $('#app').innerHTML = `<form class="cartao login" id="login"><h2>Iniciar sessão</h2><label class="c">Email<input id="lgEmail" type="email" autocomplete="username" required></label>
+    <label class="c">Palavra-passe<input id="lgPass" type="password" autocomplete="current-password" required></label><div class="erro" id="lgErr">${esc(msg || '')}</div><div class="acoes"><span class="esp"></span><button class="b pri" type="submit">Entrar</button></div></form>`;
+  $('#login').addEventListener('submit', async e => { e.preventDefault();
+    const {error} = await sb.auth.signInWithPassword({email: $('#lgEmail').value.trim(), password: $('#lgPass').value});
+    if (error) { $('#lgErr').textContent = msgErro(error); return; }
+    entrar(); });
+}
+async function entrar() {
+  try { await carregarTudo(); $('#sair').hidden = !sb; render(); }
+  catch (err) { $('#app').innerHTML = `<div class="aviso"><b>Não foi possível ler os dados.</b> ${esc(msgErro(err))}</div>`; }
+}
+if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
+(async function arrancar() {
+  $('#dataHoje').textContent = new Date().toLocaleDateString('pt-PT', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
+  if (CONFIG.SUPABASE_URL && CONFIG.SUPABASE_KEY) {
+    $('#modo').textContent = 'Supabase';
+    try {
+      await carregarScript('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2');
+      sb = window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_KEY);
+      const {data, error} = await sb.auth.getSession(); if (error) throw error;
+      if (data.session) entrar(); else ecraLogin();
+    } catch (err) { sb = null; $('#app').innerHTML = `<div class="aviso"><b>Falha na ligação ao Supabase.</b> ${esc(msgErro(err))}</div>`; }
+  } else { $('#modo').textContent = 'Modo local'; entrar(); }
+})();
+</script>
+</body>
+</html>
